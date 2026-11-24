@@ -48,7 +48,7 @@ Keep a Changelog and the project uses semantic versioning.
 ### Verified
 
 - `cargo build --release` with zero warnings.
-- 253 tests across 36 targets pass in debug and release.
+- 258 tests across 37 targets pass in debug and release.
 - 41/41 local `.wast` assertions pass.
 - 1,000 mutated binary modules + 1,000 random byte strings + 1,000 mutated WAT
   sources + 500 mutated `.wast` scripts complete without panic.

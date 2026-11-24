@@ -22,7 +22,7 @@ $ cargo test
 $ cargo test --release
 ... 36 targets ...
 $ cargo test --release 2>&1 | grep "test result" | awk '{s+=$4} END {print s}'
-254
+258
 ```
 
 Both profiles pass with zero failures and zero ignored tests.

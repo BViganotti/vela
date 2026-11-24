@@ -99,7 +99,7 @@ python3 studio-tests/test_studio.py   # Playwright time-travel test
 Measured on the development machine (macOS aarch64, Rust 1.99.1):
 
 - `cargo build --release`: zero warnings.
-- `cargo test` and `cargo test --release`: 253 tests across 36 targets, all pass.
+- `cargo test` and `cargo test --release`: 258 tests across 37 targets, all pass.
 - Local `.wast` fixtures: 41/41 assertions across 6 files. The official
   WebAssembly suite is not vendored; no broader coverage is claimed.
 - Fuzzing: 1,000 mutated binary modules, 1,000 random byte strings, 1,000

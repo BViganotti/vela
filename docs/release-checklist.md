@@ -11,7 +11,7 @@ cargo test --release             # must pass
 cargo fmt --all -- --check       # formatting is stable
 ```
 
-Expected: 36 test targets, 253 passing tests, zero warnings.
+Expected: 37 test targets, 258 passing tests, zero warnings.
 
 ## Correctness gates
 

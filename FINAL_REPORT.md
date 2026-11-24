@@ -9,15 +9,15 @@ or copied from another engine.
 | # | Requirement | Status | Evidence |
 | --- | --- | --- | --- |
 | 1 | `cargo build --release` succeeds with zero warnings | **done** | release build finished with 0 warning lines |
-| 2 | `cargo test` passes | **done** | 254 tests, 36 targets |
-| 3 | `cargo test --release` passes | **done** | 254 tests, 36 targets |
+| 2 | `cargo test` passes | **done** | 258 tests, 37 targets |
+| 3 | `cargo test --release` passes | **done** | 258 tests, 37 targets |
 | 4 | 1,000 fuzzed/mutated modules fail cleanly, never panic | **done** | `fuzz_modules`: 1,000 mutations + 1,000 random byte strings |
 | 5 | 100 replays produce identical trace and memory hashes | **done** | `replay.rs`, pure and host-clock workloads |
 | 6 | Reverse stepping matches forward state at 500 checkpoints | **done** | `forward_backward_states_match`, 500 targets |
 | 7 | Studio opens, runs, sets a breakpoint and rewinds via Playwright | **done** | `studio-tests/test_studio.py` transcript below |
 | 8 | README, docs, CHANGELOG, LICENSE, LIMITATIONS, FINAL_REPORT | **done** | repository root and `docs/` |
 | 9 | FINAL_REPORT lists LOC, commits, tests, spec coverage, benchmarks, gaps | **done** | this file |
-| 10 | Repo committed and pushed | **done** | https://github.com/BViganotti/vela (91 commits on `master`) |
+| 10 | Repo committed and pushed | **done** | https://github.com/BViganotti/vela (101 commits on `master`) |
 | 11 | No external crate, no CI, no CLI-only product | **done** | `Cargo.lock` contains only the 4 workspace crates; no `.github/workflows`; product is library + Studio |
 
 Additional constraints: no `unsafe` (grep returns 0 occurrences), Rust stable,
@@ -27,7 +27,7 @@ no vendored code, no runtime network access, no CDN or external assets.
 
 - Public: <https://github.com/BViganotti/vela>
 - Branch: `master`
-- Commits at completion: **91** (including this report)
+- Commits at completion: **101** (including this report)
 - Workspace: `vela-core`, `vela-replay`, `vela-studio`, `vela-spec`
 - Embedded UI: original HTML/CSS/JS in `assets/`, compiled with `include_str!`
 
@@ -48,9 +48,9 @@ Supporting material, not part of the production count:
 
 | Area | LOC |
 | --- | ---: |
-| `crates/*/tests` (integration) + unit tests | 5,248 |
+| `crates/*/tests` (integration) + unit tests | 5,252 |
 | `examples/` (20 `.wat` modules) | 292 |
-| `docs/` | 1,442 |
+| `docs/` | 1,863 |
 | fuzz scripts + corpus documentation | 42 |
 
 The production figure sits inside the 14–17k target. No filler modules or
@@ -68,7 +68,7 @@ cargo test -p vela-core --test fuzz_text
 cargo run -p vela-spec -- tests/fixtures
 ```
 
-Result: **254 tests across 36 targets pass in both profiles**.
+Result: **258 tests across 37 targets pass in both profiles**.
 
 Highlights:
 
@@ -80,7 +80,7 @@ Highlights:
 | `runtime` / `numeric` / `memory_ops` / `table_ops` | 42 | execution, traps, widths, growth, bulk memory |
 | `reference` / `imports` / `host` | 15 | refs, linking, host results/errors, shared state |
 | `text` / `text_more` / `text_errors` | 28 | parsing, printing, literals, diagnostics |
-| `spec` / `wast_variants` | 13 | fixtures, NaN classes, invalid/malformed, linking |
+| `spec` / `wast_variants` / `wast_binary` | 17 | fixtures, NaN classes, invalid/malformed, binary/quote scripts |
 | `examples` | 4 | 20 modules, expected values, directory count |
 | `fuzz_modules` / `fuzz_text` / `structured_fuzz` | 5 | mutation and property fuzzing |
 | `vela-replay` | 25 | determinism, rewind, breakpoints, diff, checkpoints |
