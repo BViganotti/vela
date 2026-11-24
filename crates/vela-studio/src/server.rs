@@ -89,6 +89,7 @@ pub fn run_server(mut studio: Studio, token: String, open_browser: bool) -> io::
     if open_browser {
         launch_browser(&url);
     }
+    let origin = format!("http://{addr}");
     let mut shutdown = false;
     for incoming in listener.incoming() {
         if shutdown {
@@ -107,7 +108,7 @@ pub fn run_server(mut studio: Studio, token: String, open_browser: bool) -> io::
                 continue;
             }
         };
-        match handle(&mut studio, &request, &mut stream, &token) {
+        match handle(&mut studio, &request, &mut stream, &token, &origin) {
             Ok(stop) => shutdown = stop,
             Err(_) => {
                 let _ = write_response(
@@ -125,6 +126,7 @@ fn handle(
     req: &Request,
     stream: &mut TcpStream,
     token: &str,
+    origin: &str,
 ) -> io::Result<bool> {
     let path = req.path.as_str();
     // Static assets are same-origin and carry no secrets.
@@ -154,6 +156,10 @@ fn handle(
         return write_response(stream, &Response::error(403, "missing or invalid token"))
             .map(|_| false);
     }
+    if req.method == "POST" && !origin_allowed(req, origin) {
+        return write_response(stream, &Response::error(403, "cross-origin request rejected"))
+            .map(|_| false);
+    }
 
     let response = match (req.method.as_str(), path) {
         ("GET", "/api/state") => {
@@ -164,6 +170,15 @@ fn handle(
                 .unwrap_or(0);
             Response::json(&api::state_json(studio, start), 200)
         }
+        ("GET", "/api/health") => Response::json(
+            &Json::obj(vec![
+                ("ok", Json::Bool(true)),
+                ("version", Json::str(env!("CARGO_PKG_VERSION"))),
+                ("step", Json::Int(studio.session().map(|s| s.exec.steps as i64).unwrap_or(0))),
+            ]),
+            200,
+        ),
+        ("GET", "/api/trace.json") => Response::json(&api::trace_json(studio), 200),
         ("GET", "/api/spec") => Response::json(&api::spec_json(None), 200),
         ("GET", "/api/exports") => Response::json(&api::exports_of(&studio.source), 200),
         ("GET", "/api/stream") => {
@@ -297,11 +312,32 @@ fn handle(
             let _ = write_response(stream, &Response::json(&Json::obj(vec![("ok", Json::Bool(true))]), 200));
             return Ok(true);
         }
+        (_, "/api/state" | "/api/health" | "/api/trace.json" | "/api/spec" | "/api/exports" | "/api/stream"
+            | "/api/load" | "/api/action" | "/api/breakpoints" | "/api/diff" | "/api/shutdown") => {
+            Response::error(405, "method not allowed")
+        }
         (_, p) if p.starts_with("/api/") => Response::error(404, "unknown API route"),
         _ => Response::error(404, "not found"),
     };
     write_response(stream, &response)?;
     Ok(false)
+}
+
+fn origin_allowed(req: &Request, origin: &str) -> bool {
+    match req.headers.get("origin") {
+        None => true,
+        Some(o) => {
+            if o == origin {
+                return true;
+            }
+            // The page can be opened via localhost instead of 127.0.0.1.
+            if let Some(port) = origin.rsplit(':').next() {
+                let localhost = format!("http://localhost:{port}");
+                return o == &localhost;
+            }
+            false
+        }
+    }
 }
 
 fn authorized(req: &Request, token: &str) -> bool {

@@ -338,6 +338,36 @@ pub fn spec_json(custom: Option<&str>) -> Json {
     ])
 }
 
+/// Full trace download with hashes, used by the trace export button.
+pub fn trace_json(studio: &Studio) -> Json {
+    let Some(session) = studio.session() else {
+        return Json::obj(vec![("error", Json::str("no session"))]);
+    };
+    let events: Vec<Json> = session
+        .trace
+        .events
+        .iter()
+        .map(|e| {
+            Json::obj(vec![
+                ("step", Json::Int(e.step as i64)),
+                ("func", Json::Int(e.func_addr as i64)),
+                ("offset", Json::Int(e.offset as i64)),
+                ("op", Json::str(e.op)),
+                ("stack_height", Json::Int(e.stack_height as i64)),
+                ("call_depth", Json::Int(e.call_depth as i64)),
+                ("stack_hash", Json::str(hex_hash(e.stack_hash))),
+            ])
+        })
+        .collect();
+    Json::obj(vec![
+        ("export", Json::str(studio.export.clone())),
+        ("steps", Json::Int(session.exec.steps as i64)),
+        ("trace_hash", Json::str(hex_hash(session.trace_hash()))),
+        ("state_hash", Json::str(hex_hash(session.state_hash()))),
+        ("events", Json::Arr(events)),
+    ])
+}
+
 pub fn diff_json(
     source: &str,
     export: &str,
