@@ -165,3 +165,49 @@ fn spec_and_diff_endpoints() {
     assert_eq!(status, 200);
     assert!(body.contains("\"events\""));
 }
+
+#[test]
+fn sse_stream_emits_steps_and_done() {
+    let studio = start();
+    let mut stream = TcpStream::connect(&studio.addr).unwrap();
+    stream.set_read_timeout(Some(Duration::from_secs(15))).unwrap();
+    write!(
+        stream,
+        "GET /api/stream?token={} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n",
+        studio.token
+    )
+    .unwrap();
+    stream.flush().unwrap();
+    let mut buf = Vec::new();
+    let mut chunk = [0u8; 4096];
+    loop {
+        match stream.read(&mut chunk) {
+            Ok(0) => break,
+            Ok(n) => {
+                buf.extend_from_slice(&chunk[..n]);
+                if buf.windows(13).any(|w| w == b"event: done\n") {
+                    break;
+                }
+            }
+            Err(_) => break,
+        }
+    }
+    let text = String::from_utf8_lossy(&buf);
+    assert!(text.contains("200 OK"), "{text}");
+    assert!(text.contains("text/event-stream"));
+    assert!(text.contains("event: step"), "no step events");
+    assert!(text.contains("event: done"), "no done event");
+    assert!(text.contains("\"steps\""));
+}
+
+#[test]
+fn invalid_module_load_returns_400_and_keeps_state() {
+    let studio = start();
+    let body = r#"{"source":"(module (func (result i32) i64.const 0))","export":"f","args":[]}"#;
+    let (status, text) = request(&studio, "POST", "/api/load", true, Some(body), None);
+    assert_eq!(status, 400);
+    assert!(text.contains("error"), "{text}");
+    let (status, state) = request(&studio, "GET", "/api/state", true, None, None);
+    assert_eq!(status, 200);
+    assert!(state.contains("\"loaded\":true"));
+}
