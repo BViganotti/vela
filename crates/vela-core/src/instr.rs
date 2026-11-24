@@ -527,8 +527,9 @@ impl Instr {
         use Instr::*;
         Some(match self {
             I32Eqz | I32Clz | I32Ctz | I32Popcnt | I32Extend8S | I32Extend16S => (I32_, I32_),
-            I64Eqz | I64Clz | I64Ctz | I64Popcnt | I64Extend8S | I64Extend16S | I64Extend32S => {
-                (I64_, I32_)
+            I64Eqz => (I64_, I32_),
+            I64Clz | I64Ctz | I64Popcnt | I64Extend8S | I64Extend16S | I64Extend32S => {
+                (I64_, I64_)
             }
             I32Eq | I32Ne | I32LtS | I32LtU | I32GtS | I32GtU | I32LeS | I32LeU | I32GeS
             | I32GeU | I32Add | I32Sub | I32Mul | I32DivS | I32DivU | I32RemS | I32RemU
