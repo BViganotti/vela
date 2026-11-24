@@ -16,6 +16,7 @@ Start here:
 | [errors](errors.md) | error taxonomy and failure stages |
 | [embedding](embedding.md) | using the libraries from Rust |
 | [studio](studio.md) | security model, UI, HTTP/SSE API |
+| [troubleshooting](troubleshooting.md) | common Studio and runtime issues |
 | [security](security.md) | threat model and resource limits |
 | [testing](testing.md) | test layers and commands |
 | [benchmarks](benchmarks.md) | measured performance |
