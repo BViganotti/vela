@@ -19,6 +19,7 @@ Start here:
 | [troubleshooting](troubleshooting.md) | common Studio and runtime issues |
 | [security](security.md) | threat model and resource limits |
 | [testing](testing.md) | test layers and commands |
+| [verification](verification.md) | recorded build/test/fuzz/Studio transcript |
 | [benchmarks](benchmarks.md) | measured performance |
 | [examples](examples.md) | 20 example modules and expected results |
 | [scope](scope.md) | supported features and non-goals |
