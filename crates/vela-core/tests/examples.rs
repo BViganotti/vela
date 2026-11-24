@@ -55,6 +55,11 @@ fn examples_match_expected() {
         let out = invoke(&mut store, inst, "pick", &[Value::I32(1)]).expect("indirect_call.wat");
         assert_eq!(out, vec![Value::I32(2)], "indirect_call.wat");
     }
+    {
+        let (mut store, inst) = load("globals_counter.wat");
+        let out = invoke(&mut store, inst, "counter", &[]).expect("globals_counter.wat");
+        assert_eq!(out, vec![Value::I32(2)], "globals_counter.wat");
+    }
 }
 
 #[test]
@@ -75,6 +80,7 @@ fn every_example_export_resolves() {
         ("memory_copy.wat", "copy"),
         ("memory_fill.wat", "fill"),
         ("indirect_call.wat", "pick"),
+        ("globals_counter.wat", "counter"),
         ("traps_div.wat", "div"),
     ];
     for (name, export) in cases {
