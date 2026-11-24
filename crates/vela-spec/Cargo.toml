@@ -1,0 +1,14 @@
+[package]
+name = "vela-spec"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Spec and fixture runner for Vela (test harness, not a product CLI)"
+
+[dependencies]
+vela-core = { path = "../vela-core" }
+vela-replay = { path = "../vela-replay" }
+
+[[bin]]
+name = "vela-spec"
+path = "src/main.rs"

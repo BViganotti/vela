@@ -1,0 +1,8 @@
+[package]
+name = "vela-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "WebAssembly decoder, validator and interpreter for Vela"
+
+[dependencies]

@@ -1,0 +1,14 @@
+[package]
+name = "vela-studio"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Local loopback Studio for the Vela WebAssembly runtime"
+
+[dependencies]
+vela-core = { path = "../vela-core" }
+vela-replay = { path = "../vela-replay" }
+
+[[bin]]
+name = "vela-studio"
+path = "src/main.rs"

@@ -1,0 +1,25 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/vela-core",
+    "crates/vela-replay",
+    "crates/vela-studio",
+    "crates/vela-spec",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["Vela contributors"]
+repository = "https://github.com/BViganotti/vela"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+unused_must_use = "deny"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+panic = "abort"
