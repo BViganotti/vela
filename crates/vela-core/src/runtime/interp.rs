@@ -420,7 +420,7 @@ impl Machine {
                     .table_addrs
                     .get(*t as usize)
                     .ok_or(Trap::TableOutOfBounds)?;
-                let old = store.table_mut(addr)?.grow(delta.max(0) as u32, init);
+                let old = store.table_mut(addr)?.grow(delta as u32, init);
                 push(
                     st,
                     self.limits.max_stack,
@@ -445,7 +445,7 @@ impl Machine {
                     .table_addrs
                     .get(*t as usize)
                     .ok_or(Trap::TableOutOfBounds)?;
-                store.table_mut(addr)?.fill(i as u32, val, n.max(0) as u32)?;
+                store.table_mut(addr)?.fill(i as u32, val, n as u32)?;
             }
             TableInit { elem, table } => {
                 let n = pop_i32(st)?;
@@ -467,7 +467,7 @@ impl Machine {
                     (table_addr, seg)
                 };
                 let table_inst = store.table_mut(table_addr)?;
-                table_inst.init(d as u32, seg.as_slice(), s as u32, n.max(0) as u32)?;
+                table_inst.init(d as u32, seg.as_slice(), s as u32, n as u32)?;
             }
             TableCopy { dst, src } => {
                 let n = pop_i32(st)?;
@@ -483,12 +483,12 @@ impl Machine {
                     .get(*src as usize)
                     .ok_or(Trap::TableOutOfBounds)?;
                 if dst_addr == src_addr {
-                    store.table_mut(dst_addr)?.copy(d as u32, s as u32, n.max(0) as u32)?;
+                    store.table_mut(dst_addr)?.copy(d as u32, s as u32, n as u32)?;
                 } else {
                     let vals: Vec<Value> = {
                         let src_table = store.table(src_addr)?;
-                        let s0 = s.max(0) as u64;
-                        let n0 = n.max(0) as u64;
+                        let s0 = s as u32 as u64;
+                        let n0 = n as u32 as u64;
                         if s0 + n0 > src_table.len() as u64 {
                             return Err(Trap::TableOutOfBounds);
                         }
@@ -498,7 +498,7 @@ impl Machine {
                     };
                     store
                         .table_mut(dst_addr)?
-                        .init(d as u32, &vals, 0, n.max(0) as u32)?;
+                        .init(d as u32, &vals, 0, n as u32)?;
                 }
             }
             ElemDrop(e) => {
@@ -529,7 +529,7 @@ impl Machine {
                     .mem_addrs
                     .get(*m as usize)
                     .ok_or(Trap::MemoryOutOfBounds)?;
-                let old = store.memory_mut(addr)?.grow(delta.max(0) as u32);
+                let old = store.memory_mut(addr)?.grow(delta as u32);
                 push(
                     st,
                     self.limits.max_stack,
@@ -556,7 +556,7 @@ impl Machine {
                     (mem_addr, seg)
                 };
                 let mem_inst = store.memory_mut(mem_addr)?;
-                mem_inst.init(d as u32, seg.as_slice(), s as u32, n.max(0) as u32)?;
+                mem_inst.init(d as u32, seg.as_slice(), s as u32, n as u32)?;
             }
             DataDrop(d) => {
                 let inst_ref = store.instance(inst)?;
@@ -580,18 +580,18 @@ impl Machine {
                     .get(*src as usize)
                     .ok_or(Trap::MemoryOutOfBounds)?;
                 if dst_addr == src_addr {
-                    store.memory_mut(dst_addr)?.copy(d as u32, s as u32, n.max(0) as u32)?;
+                    store.memory_mut(dst_addr)?.copy(d as u32, s as u32, n as u32)?;
                 } else {
                     let bytes: Vec<u8> = {
                         let m = store.memory(src_addr)?;
-                        let s0 = s.max(0) as u64;
-                        let n0 = n.max(0) as u64;
+                        let s0 = s as u32 as u64;
+                        let n0 = n as u32 as u64;
                         if s0 + n0 > m.len() as u64 {
                             return Err(Trap::MemoryOutOfBounds);
                         }
                         m.data()[s0 as usize..(s0 + n0) as usize].to_vec()
                     };
-                    store.memory_mut(dst_addr)?.init(d as u32, &bytes, 0, n.max(0) as u32)?;
+                    store.memory_mut(dst_addr)?.init(d as u32, &bytes, 0, n as u32)?;
                 }
             }
             MemoryFill(m) => {
@@ -603,7 +603,7 @@ impl Machine {
                     .mem_addrs
                     .get(*m as usize)
                     .ok_or(Trap::MemoryOutOfBounds)?;
-                store.memory_mut(addr)?.fill(d as u32, val, n.max(0) as u32)?;
+                store.memory_mut(addr)?.fill(d as u32, val, n as u32)?;
             }
             Load { kind, mem, arg } => {
                 let addr = pop_i32(st)? as u32;
