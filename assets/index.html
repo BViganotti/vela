@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Vela Studio</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="app">
+  <header class="chrome">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">◆</span>
+      <div class="brand-text">
+        <h1>Vela</h1>
+        <p>WebAssembly time-travel Studio</p>
+      </div>
+    </div>
+    <div class="chrome-right">
+      <span id="message" class="message">ready</span>
+      <span id="status-pill" class="pill idle">idle</span>
+      <span id="step-badge" class="badge">step 0</span>
+      <span id="hash-badge" class="badge mono" title="trace / state hashes">—</span>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <aside class="column left">
+      <section class="panel source-panel">
+        <div class="panel-head">
+          <h2>Module</h2>
+          <div class="row tight">
+            <button id="btn-load" class="primary">Load</button>
+            <button id="btn-restart">Restart</button>
+          </div>
+        </div>
+        <textarea id="source" spellcheck="false" autocomplete="off" aria-label="WebAssembly text source"></textarea>
+        <div class="controls">
+          <label class="field">
+            <span>Export</span>
+            <select id="export-select"></select>
+          </label>
+          <label class="field">
+            <span>Args</span>
+            <input id="args-input" value="10" inputmode="numeric" autocomplete="off">
+          </label>
+        </div>
+        <div class="row">
+          <button id="btn-run" class="primary">Run</button>
+          <button id="btn-step">Step</button>
+          <button id="btn-back">Back</button>
+          <button id="btn-finish">To end</button>
+        </div>
+        <div id="error-box" class="error hidden" role="alert"></div>
+        <p class="hint">Runs entirely on 127.0.0.1 with an embedded engine. No network, no third-party code.</p>
+      </section>
+    </aside>
+
+    <main class="column center">
+      <section class="panel disasm-panel">
+        <div class="panel-head">
+          <h2>Disassembly</h2>
+          <div class="row tight">
+            <span id="func-label" class="mono subtle">—</span>
+            <span id="pc-label" class="mono subtle">pc —</span>
+          </div>
+        </div>
+        <div id="disasm" class="disasm" aria-label="Disassembly"></div>
+        <p class="hint">Click an instruction to toggle a breakpoint at that offset.</p>
+      </section>
+
+      <section class="panel inspect-panel">
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-tab="locals" role="tab">Locals</button>
+          <button class="tab" data-tab="stack" role="tab">Stack</button>
+          <button class="tab" data-tab="frames" role="tab">Call stack</button>
+          <button class="tab" data-tab="globals" role="tab">Globals</button>
+          <button class="tab" data-tab="memory" role="tab">Memory</button>
+        </div>
+        <div id="tab-locals" class="tab-body active"></div>
+        <div id="tab-stack" class="tab-body"></div>
+        <div id="tab-frames" class="tab-body"></div>
+        <div id="tab-globals" class="tab-body"></div>
+        <div id="tab-memory" class="tab-body"></div>
+      </section>
+    </main>
+
+    <aside class="column right">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Breakpoints</h2>
+          <button id="btn-bp-clear" class="ghost">Clear</button>
+        </div>
+        <div class="row">
+          <label class="check"><input type="checkbox" id="bp-host"> Host calls</label>
+          <button id="btn-bp-func">Function</button>
+        </div>
+        <div class="row">
+          <input id="bp-mem-input" placeholder="memory address" inputmode="numeric" autocomplete="off">
+          <button id="btn-bp-mem">Add</button>
+        </div>
+        <ul id="bp-list" class="list"></ul>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Spec dashboard</h2>
+          <button id="btn-spec" class="primary">Run suite</button>
+        </div>
+        <div id="spec-summary" class="subtle">Local fixtures are compiled into the binary.</div>
+        <div id="spec-output" class="spec-output"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Run diff</h2>
+          <button id="btn-diff">Diff</button>
+        </div>
+        <div class="row">
+          <label class="field small"><span>A</span><input id="diff-a" value="10" autocomplete="off"></label>
+          <label class="field small"><span>B</span><input id="diff-b" value="12" autocomplete="off"></label>
+        </div>
+        <div id="diff-output" class="diff-output"></div>
+      </section>
+    </aside>
+  </div>
+
+  <section class="panel timeline-panel">
+    <div class="panel-head">
+      <h2>Timeline</h2>
+      <div class="row tight">
+        <span id="timeline-meta" class="mono subtle">0 steps</span>
+        <button id="btn-stream" class="ghost">Stream via SSE</button>
+      </div>
+    </div>
+    <input type="range" id="timeline" min="0" max="0" value="0" step="1" aria-label="Rewind timeline">
+    <div class="trace-head">
+      <span>step</span><span>function</span><span>pc</span><span>instruction</span><span>stack</span><span>depth</span>
+    </div>
+    <div id="trace-list" class="trace-list"></div>
+  </section>
+
+  <footer class="footer">
+    <span>Vela · decoder · validator · interpreter · replay</span>
+    <span id="footer-hashes" class="mono">trace — · state —</span>
+  </footer>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>
