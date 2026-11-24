@@ -939,7 +939,11 @@ impl WatParser {
                             } else {
                                 None
                             };
-                            limits = Some(Limits::new(min, max));
+                            let lim = Limits::new(min, max);
+                            if !lim.is_valid(crate::types::MAX_TABLE_ENTRIES) {
+                                return Err(list[i - 1].err("table limits out of range"));
+                            }
+                            limits = Some(lim);
                             continue;
                         }
                     }
