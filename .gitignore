@@ -1,0 +1,16 @@
+# Ignore the implementation/planning docs (kept local, not committed)
+/PLAN.md
+/REQUIREMENTS.md
+/AGENT_PROMPT.md
+
+# Rust build artifacts
+/target/
+**/target/
+*.rs.bk
+*.pdb
+
+# Local scratch
+/.idea/
+.vscode/
+.DS_Store
+*.swp
