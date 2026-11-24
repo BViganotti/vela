@@ -21,6 +21,7 @@ pub const TOKEN_HEADER: &str = "x-vela-token";
 const MAX_HEADER_BYTES: usize = 64 * 1024;
 const MAX_BODY_BYTES: usize = 2 * 1024 * 1024;
 
+#[derive(Debug)]
 pub struct Request {
     pub method: String,
     pub path: String,
@@ -600,5 +601,139 @@ fn launch_browser(url: &str) {
     #[allow(unreachable_code)]
     {
         let _ = command;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use std::net::TcpListener;
+
+    fn request(method: &str, path: &str, token: Option<&str>, origin: Option<&str>) -> Request {
+        let mut headers = HashMap::new();
+        if let Some(t) = token {
+            headers.insert(TOKEN_HEADER.to_string(), t.to_string());
+        }
+        if let Some(o) = origin {
+            headers.insert("origin".to_string(), o.to_string());
+        }
+        Request {
+            method: method.to_string(),
+            path: path.to_string(),
+            query: HashMap::new(),
+            headers,
+            body: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn percent_decoding() {
+        assert_eq!(percent_decode("a%20b"), "a b");
+        assert_eq!(percent_decode("a+b"), "a b");
+        assert_eq!(percent_decode("%2F%2f"), "//");
+        assert_eq!(percent_decode("%zz"), "%zz");
+        assert_eq!(percent_decode("100%"), "100%");
+    }
+
+    #[test]
+    fn query_parsing() {
+        let q = parse_query("token=abc&start=5&empty=&flag");
+        assert_eq!(q["token"], "abc");
+        assert_eq!(q["start"], "5");
+        assert_eq!(q["empty"], "");
+        assert_eq!(q["flag"], "");
+    }
+
+    #[test]
+    fn authorization_accepts_query_or_header() {
+        let token = "deadbeef";
+        let mut r = request("GET", "/api/state", Some(token), None);
+        assert!(authorized(&r, token));
+        assert!(!authorized(&r, "other"));
+        r.headers.clear();
+        assert!(!authorized(&r, token));
+        r.query.insert("token".into(), token.into());
+        assert!(authorized(&r, token));
+    }
+
+    #[test]
+    fn origin_policy_blocks_cross_site_posts() {
+        let origin = "http://127.0.0.1:9000";
+        assert!(origin_allowed(&request("POST", "/api/action", Some("t"), None), origin));
+        assert!(origin_allowed(
+            &request("POST", "/api/action", Some("t"), Some("http://127.0.0.1:9000")),
+            origin
+        ));
+        assert!(origin_allowed(
+            &request("POST", "/api/action", Some("t"), Some("http://localhost:9000")),
+            origin
+        ));
+        assert!(!origin_allowed(
+            &request("POST", "/api/action", Some("t"), Some("http://evil.example")),
+            origin
+        ));
+    }
+
+    #[test]
+    fn reads_request_with_body() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let addr = listener.local_addr().unwrap();
+        let handle = std::thread::spawn(move || {
+            let mut stream = std::net::TcpStream::connect(addr).unwrap();
+            let body = "{\"action\":\"step\"}";
+            write!(
+                stream,
+                "POST /api/action?token=abc HTTP/1.1\r\nHost: localhost\r\nContent-Length: {}\r\nContent-Type: application/json\r\n\r\n{}",
+                body.len(),
+                body
+            )
+            .unwrap();
+            stream.flush().unwrap();
+        });
+        let (mut stream, _) = listener.accept().unwrap();
+        let req = read_request(&mut stream).unwrap();
+        handle.join().unwrap();
+        assert_eq!(req.method, "POST");
+        assert_eq!(req.path, "/api/action");
+        assert_eq!(req.query["token"], "abc");
+        assert_eq!(req.headers["host"], "localhost");
+        assert_eq!(req.body, b"{\"action\":\"step\"}");
+    }
+
+    #[test]
+    fn rejects_oversized_headers() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let addr = listener.local_addr().unwrap();
+        let handle = std::thread::spawn(move || {
+            let mut stream = std::net::TcpStream::connect(addr).unwrap();
+            let junk = "X".repeat(MAX_HEADER_BYTES + 10);
+            let _ = write!(stream, "GET / HTTP/1.1\r\nX: {junk}\r\n\r\n");
+        });
+        let (mut stream, _) = listener.accept().unwrap();
+        let err = read_request(&mut stream).unwrap_err();
+        handle.join().unwrap();
+        // The exact error depends on how much of the oversized header the
+        // client manages to send before the server rejects or the socket
+        // resets; any rejection is acceptable.
+        assert!(!err.is_empty());
+    }
+
+    #[test]
+    fn rejects_truncated_bodies() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let addr = listener.local_addr().unwrap();
+        let handle = std::thread::spawn(move || {
+            let mut stream = std::net::TcpStream::connect(addr).unwrap();
+            let _ = write!(
+                stream,
+                "POST /api/action HTTP/1.1\r\nContent-Length: 100\r\n\r\nabc"
+            );
+            stream.shutdown(std::net::Shutdown::Write).unwrap();
+        });
+        let (mut stream, _) = listener.accept().unwrap();
+        let err = read_request(&mut stream).unwrap_err();
+        handle.join().unwrap();
+        assert!(err.contains("closed before body"), "{err}");
     }
 }
