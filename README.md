@@ -94,6 +94,26 @@ make studio         # launch the Studio
 python3 studio-tests/test_studio.py   # Playwright time-travel test
 ```
 
+## Verified results (0.1.0)
+
+Measured on the development machine (macOS aarch64, Rust 1.99.1):
+
+- `cargo build --release`: zero warnings.
+- `cargo test` and `cargo test --release`: 253 tests across 36 targets, all pass.
+- Local `.wast` fixtures: 41/41 assertions across 6 files. The official
+  WebAssembly suite is not vendored; no broader coverage is claimed.
+- Fuzzing: 1,000 mutated binary modules, 1,000 random byte strings, 1,000
+  mutated WAT sources and 500 mutated `.wast` scripts, with no panics.
+- Determinism: 100 replays (including host clock calls) with identical trace
+  and state hashes; 500 rewind checkpoints match forward state; 100 sequential
+  reverse steps match forward hashes.
+- Studio Playwright test: opens, runs 424 steps, sets an instruction
+  breakpoint, steps forward/back, rewinds the timeline, runs the spec
+  dashboard, run diff and SSE stream.
+- Production source is ~15.4k lines (Rust + embedded UI); tests add ~5.2k.
+
+Details: `FINAL_REPORT.md`, `docs/benchmarks.md`, `docs/testing.md`.
+
 ## Documentation
 
 - `docs/architecture.md` — crates, data flow, soundness boundaries

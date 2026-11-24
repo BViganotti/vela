@@ -45,6 +45,18 @@ Keep a Changelog and the project uses semantic versioning.
   replay, Studio API, security, testing, benchmarks, scope and examples.
 - MIT license.
 
+### Verified
+
+- `cargo build --release` with zero warnings.
+- 253 tests across 36 targets pass in debug and release.
+- 41/41 local `.wast` assertions pass.
+- 1,000 mutated binary modules + 1,000 random byte strings + 1,000 mutated WAT
+  sources + 500 mutated `.wast` scripts complete without panic.
+- 100 deterministic replays and 500 rewind checkpoints verified.
+- Playwright Studio test passes run, breakpoint, step back, timeline rewind,
+  spec dashboard, run diff and SSE stream.
+- Benchmarks recorded in `docs/benchmarks.md`; no CI/CD workflows exist.
+
 ### Notes
 
 - The official WebAssembly specification suite is not vendored; coverage claims
