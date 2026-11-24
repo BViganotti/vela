@@ -85,6 +85,11 @@ fn examples_match_expected() {
         let out = invoke(&mut store, inst, "math", &[]).expect("float_math.wat");
         assert_eq!(out, vec![Value::F64(11.0)], "float_math.wat");
     }
+    {
+        let (mut store, inst) = load("conversions.wat");
+        let out = invoke(&mut store, inst, "convert", &[]).expect("conversions.wat");
+        assert_eq!(out, vec![Value::I64(4294967298)], "conversions.wat");
+    }
 }
 
 #[test]
@@ -111,6 +116,7 @@ fn every_example_export_resolves() {
         ("loops_sum.wat", "sum"),
         ("bitwise.wat", "bits"),
         ("float_math.wat", "math"),
+        ("conversions.wat", "convert"),
         ("traps_div.wat", "div"),
     ];
     for (name, export) in cases {
