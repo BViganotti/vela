@@ -100,6 +100,11 @@ fn examples_match_expected() {
         let out = invoke(&mut store, inst, "switch", &[Value::I32(2)]).expect("br_table.wat");
         assert_eq!(out, vec![Value::I32(20)], "br_table.wat");
     }
+    {
+        let (mut store, inst) = load("start_function.wat");
+        let out = invoke(&mut store, inst, "read", &[]).expect("start_function.wat");
+        assert_eq!(out, vec![Value::I32(42)], "start_function.wat");
+    }
 }
 
 #[test]
@@ -129,6 +134,7 @@ fn every_example_export_resolves() {
         ("conversions.wat", "convert"),
         ("select_demo.wat", "choose"),
         ("br_table.wat", "switch"),
+        ("start_function.wat", "read"),
         ("traps_div.wat", "div"),
     ];
     for (name, export) in cases {
