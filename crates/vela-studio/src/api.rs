@@ -453,3 +453,80 @@ pub fn func_kind(session: &Session, addr: u32) -> &'static str {
         _ => "wasm",
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::studio::Studio;
+
+    #[test]
+    fn default_state_exposes_the_workbench_model() {
+        let mut studio = Studio::new();
+        let state = state_json(&studio, 0);
+        assert_eq!(state.get("loaded").unwrap().as_bool(), Some(true));
+        assert_eq!(state.get("export").unwrap().as_str(), Some("main"));
+        assert!(state.get("disasm").unwrap().as_arr().unwrap().len() > 0);
+        assert!(state.get("exports").unwrap().as_arr().unwrap().len() >= 3);
+        assert!(state.get("memory").unwrap().get("pages").unwrap().as_i64().unwrap() >= 1);
+        assert_eq!(state.get("step").unwrap().as_i64(), Some(0));
+        assert!(state.get("trace_hash").unwrap().as_str().unwrap().len() == 16);
+
+        studio.action("run", None).unwrap();
+        let state = state_json(&studio, 0);
+        assert_eq!(state.get("finished").unwrap().as_bool(), Some(true));
+        assert!(state.get("step").unwrap().as_i64().unwrap() > 100);
+        assert!(state.get("trace").unwrap().as_arr().unwrap().len() > 0);
+
+        let trace = trace_json(&studio);
+        let events = trace.get("events").unwrap().as_arr().unwrap();
+        assert_eq!(events.len() as i64, trace.get("steps").unwrap().as_i64().unwrap());
+    }
+
+    #[test]
+    fn memory_window_is_clamped_and_hex_encoded() {
+        let studio = Studio::new();
+        let state = state_json(&studio, 999_999);
+        let mem = state.get("memory").unwrap();
+        let start = mem.get("start").unwrap().as_i64().unwrap();
+        let data = mem.get("data").unwrap().as_str().unwrap();
+        assert!(start >= 0);
+        assert!(data.len() <= 512);
+        assert!(data.len() % 2 == 0);
+        assert!(data.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn spec_dashboard_runs_embedded_fixtures() {
+        let report = spec_json(None);
+        assert_eq!(report.get("total").unwrap().as_i64(), Some(41));
+        assert_eq!(report.get("passed").unwrap().as_i64(), Some(41));
+        assert_eq!(report.get("failed").unwrap().as_i64(), Some(0));
+        assert_eq!(report.get("reports").unwrap().as_arr().unwrap().len(), 6);
+        let custom = spec_json(Some("(module)\n(assert_return (invoke \"x\") (i32.const 0))"));
+        assert_eq!(custom.get("failed").unwrap().as_i64(), Some(1));
+    }
+
+    #[test]
+    fn diff_reports_first_divergence() {
+        let src = "(module (func (export \"f\") (param i32) (result i32) local.get 0))";
+        let same = diff_json(src, "f", vec![1], vec![1]);
+        assert_eq!(same.get("diverged").unwrap().as_bool(), Some(false));
+        let diff = diff_json(src, "f", vec![1], vec![2]);
+        assert_eq!(diff.get("diverged").unwrap().as_bool(), Some(true));
+        assert_eq!(diff.get("step").unwrap().as_i64(), Some(1));
+    }
+
+    #[test]
+    fn exports_of_lists_only_functions() {
+        let src = "(module (memory (export \"m\") 1) (func (export \"f\")) (global (export \"g\") i32 (i32.const 0)))";
+        let exports = exports_of(src);
+        let names: Vec<&str> = exports
+            .as_arr()
+            .unwrap()
+            .iter()
+            .map(|v| v.as_str().unwrap())
+            .collect();
+        assert_eq!(names, vec!["f"]);
+        assert!(exports_of("not wat").as_arr().unwrap().is_empty());
+    }
+}
