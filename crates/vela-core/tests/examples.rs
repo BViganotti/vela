@@ -115,6 +115,11 @@ fn examples_match_expected() {
         let out = invoke(&mut store, inst, "quad", &[Value::I32(7)]).expect("nested_calls.wat");
         assert_eq!(out, vec![Value::I32(28)], "nested_calls.wat");
     }
+    {
+        let (mut store, inst) = load("collatz.wat");
+        let out = invoke(&mut store, inst, "steps", &[Value::I32(27)]).expect("collatz.wat");
+        assert_eq!(out, vec![Value::I32(111)], "collatz.wat");
+    }
 }
 
 #[test]
@@ -147,6 +152,7 @@ fn every_example_export_resolves() {
         ("start_function.wat", "read"),
         ("table_grow.wat", "grow"),
         ("nested_calls.wat", "quad"),
+        ("collatz.wat", "steps"),
         ("traps_div.wat", "div"),
     ];
     for (name, export) in cases {
