@@ -27,6 +27,8 @@ not descriptions.
 | `nested_calls.wat` | `quad` | 7 | 28 |
 | `collatz.wat` | `steps` | 27 | 111 |
 
+See [`examples/README.md`](../examples/README.md) for the per-file guide.
+
 ## Coverage
 
 The set exercises: loops, recursion, mutual calls, memory loads/stores, data
