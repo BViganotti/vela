@@ -226,11 +226,28 @@
   function renderTrace(s) {
     const box = $("trace-list");
     const events = s.trace || [];
+    const filter = $("trace-filter");
+    const ops = Array.from(new Set(events.map((e) => e.op))).sort();
+    const signature = ops.join("|");
+    if (filter.dataset.ops !== signature) {
+      const current = filter.value || "all";
+      filter.innerHTML = `<option value="all">all opcodes</option>` +
+        ops.map((op) => `<option value="${esc(op)}">${esc(op)}</option>`).join("");
+      filter.dataset.ops = signature;
+      filter.value = ops.includes(current) ? current : "all";
+    }
     if (!events.length) {
       box.innerHTML = `<div class="empty">No instructions executed yet. Press Run or Step.</div>`;
+      filter.value = "all";
       return;
     }
-    const slice = events.slice(-60);
+    const selected = filter.value || "all";
+    const visible = selected === "all" ? events : events.filter((e) => e.op === selected);
+    if (!visible.length) {
+      box.innerHTML = `<div class="empty">No ${esc(selected)} instructions in the recent window.</div>`;
+      return;
+    }
+    const slice = visible.slice(-60);
     box.innerHTML = slice.map((e) => {
       const current = e.step === (s.step || 0) - 1;
       return `<div class="trace-row ${current ? "current" : ""}">
@@ -392,6 +409,11 @@
     };
 
     $("btn-stream").onclick = streamTrace;
+    $("trace-filter").addEventListener("change", () => {
+      if (state.value) renderTrace(state.value);
+    });
+    const download = $("trace-download");
+    download.href = `/api/trace.json?token=${encodeURIComponent(token)}`;
   }
 
   function streamTrace() {

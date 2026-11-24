@@ -66,6 +66,16 @@ button.ghost {
   padding: 5px 8px;
 }
 button.ghost:hover { color: var(--text); background: rgba(255,255,255,0.04); border-color: var(--line); }
+.button-link {
+  color: var(--text-dim);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 4px 9px;
+  font-size: 11.5px;
+  text-decoration: none;
+}
+.button-link:hover { color: var(--accent); border-color: var(--accent-dim); }
+#trace-filter { max-width: 180px; padding: 4px 6px; font-size: 11.5px; }
 
 input, select, textarea {
   background: var(--bg-inset);
