@@ -56,6 +56,11 @@ fn examples_match_expected() {
 
 #[test]
 fn example_traps_are_typed() {
+    {
+        let (mut store, inst) = load("traps_div.wat");
+        let err = invoke(&mut store, inst, "div", &[Value::I32(1), Value::I32(0)]).expect_err("traps_div.wat");
+        assert_eq!(err, "integer divide by zero", "traps_div.wat");
+    }
 }
 
 #[test]
@@ -67,6 +72,7 @@ fn every_example_export_resolves() {
         ("memory_copy.wat", "copy"),
         ("memory_fill.wat", "fill"),
         ("indirect_call.wat", "pick"),
+        ("traps_div.wat", "div"),
     ];
     for (name, export) in cases {
         let (store, inst) = load(name);
