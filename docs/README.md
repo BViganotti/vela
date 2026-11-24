@@ -9,6 +9,7 @@ Start here:
 | [validation](validation.md) | module and function-body validation |
 | [interpreter](interpreter.md) | frames, traps, numeric semantics, limits |
 | [text](text.md) | WAT subset, printer, `.wast` commands |
+| [WAT grammar](wat-grammar.md) | accepted grammar and instruction groups |
 | [replay](replay.md) | traces, checkpoints, reverse stepping, breakpoints, diff |
 | [determinism](determinism.md) | determinism contract and hashing |
 | [imports](imports.md) | linking, type matching, instantiation order |
