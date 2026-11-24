@@ -6,3 +6,7 @@ license.workspace = true
 description = "WebAssembly decoder, validator and interpreter for Vela"
 
 [dependencies]
+
+[[bin]]
+name = "vela-bench"
+path = "src/bin/vela-bench.rs"
