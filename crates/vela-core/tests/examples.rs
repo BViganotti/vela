@@ -65,6 +65,11 @@ fn examples_match_expected() {
         let out = invoke(&mut store, inst, "bulk", &[]).expect("bulk_memory.wat");
         assert_eq!(out, vec![Value::I32(190)], "bulk_memory.wat");
     }
+    {
+        let (mut store, inst) = load("multi_value.wat");
+        let out = invoke(&mut store, inst, "pair", &[Value::I32(7)]).expect("multi_value.wat");
+        assert_eq!(out, vec![Value::I32(7), Value::I64(700)], "multi_value.wat");
+    }
 }
 
 #[test]
@@ -87,6 +92,7 @@ fn every_example_export_resolves() {
         ("indirect_call.wat", "pick"),
         ("globals_counter.wat", "counter"),
         ("bulk_memory.wat", "bulk"),
+        ("multi_value.wat", "pair"),
         ("traps_div.wat", "div"),
     ];
     for (name, export) in cases {
