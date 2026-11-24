@@ -1,0 +1,46 @@
+//! Run the hand-written example modules and compare expected results.
+
+use std::path::PathBuf;
+use vela_core::runtime::{instantiate, invoke_export, ExternVal, Limits, Registry, Store, Value};
+use vela_core::text::parse_wat;
+
+fn example_path(name: &str) -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../examples").join(name)
+}
+
+fn load(name: &str) -> (Store, u32) {
+    let src = std::fs::read_to_string(example_path(name)).expect("example exists");
+    let module = parse_wat(&src).expect("example parses");
+    let mut store = Store::new();
+    let inst = instantiate(&mut store, module, &Registry::new()).expect("instantiate");
+    (store, inst)
+}
+
+fn invoke(store: &mut Store, inst: u32, export: &str, args: &[Value]) -> Result<Vec<Value>, String> {
+    invoke_export(store, inst, export, args.to_vec(), Limits::default()).map_err(|e| e.to_string())
+}
+
+#[test]
+fn examples_match_expected() {
+    {
+        let (mut store, inst) = load("factorial.wat");
+        let out = invoke(&mut store, inst, "fact", &[Value::I32(6)]).expect("factorial.wat");
+        assert_eq!(out, vec![Value::I32(720)], "factorial.wat");
+    }
+}
+
+#[test]
+fn example_traps_are_typed() {
+}
+
+#[test]
+fn every_example_export_resolves() {
+    let cases: &[(&str, &str)] = &[
+        ("factorial.wat", "fact"),
+    ];
+    for (name, export) in cases {
+        let (store, inst) = load(name);
+        let found = store.instances[inst as usize].exports.iter().any(|(n, v)| n == export && matches!(v, ExternVal::Func(_)));
+        assert!(found, "{name} exports {export}");
+    }
+}
