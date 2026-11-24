@@ -42,6 +42,11 @@ fn examples_match_expected() {
         let out = invoke(&mut store, inst, "copy", &[]).expect("memory_copy.wat");
         assert_eq!(out, vec![Value::I32(1819043176)], "memory_copy.wat");
     }
+    {
+        let (mut store, inst) = load("memory_fill.wat");
+        let out = invoke(&mut store, inst, "fill", &[]).expect("memory_fill.wat");
+        assert_eq!(out, vec![Value::I32(171)], "memory_fill.wat");
+    }
 }
 
 #[test]
@@ -55,6 +60,7 @@ fn every_example_export_resolves() {
         ("fibonacci.wat", "fib"),
         ("gcd.wat", "gcd"),
         ("memory_copy.wat", "copy"),
+        ("memory_fill.wat", "fill"),
     ];
     for (name, export) in cases {
         let (store, inst) = load(name);
