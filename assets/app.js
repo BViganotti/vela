@@ -453,12 +453,14 @@
       } catch { /* ignore malformed event */ }
     });
     es.addEventListener("done", (ev) => {
+      let summary = "SSE stream complete";
       try {
         const d = JSON.parse(ev.data);
-        $("message").textContent = `SSE stream: ${d.steps} steps, trace ${d.trace_hash}`;
+        summary = `SSE stream: ${d.steps} steps, trace ${d.trace_hash}`;
       } catch { /* ignore */ }
       es.close();
-      fetchState();
+      // Refresh state, then restore the stream summary as the visible message.
+      fetchState().then(() => { $("message").textContent = summary; });
     });
     es.addEventListener("error", () => {
       $("message").textContent = `SSE stream ended after ${count} events`;

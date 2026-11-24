@@ -123,6 +123,21 @@ def main() -> int:
             assert "41/41" in summary, f"unexpected spec summary: {summary}"
             print("spec dashboard:", summary)
 
+            # Run diff panel (A=10, B=12 diverge).
+            page.click("#btn-diff")
+            wait_text(page, "#diff-output", lambda t: "divergence" in t.lower(), timeout=15)
+            print("run diff:", page.inner_text("#diff-output").splitlines()[0])
+
+            # SSE stream button consumes /api/stream.
+            page.click("#btn-stream")
+            wait_text(
+                page,
+                "#message",
+                lambda t: "SSE stream:" in t,
+                timeout=30,
+            )
+            print("SSE stream:", page.inner_text("#message"))
+
             page.screenshot(path="studio-tests/studio.png", full_page=True)
             browser.close()
         return 0
