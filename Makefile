@@ -1,4 +1,4 @@
-.PHONY: build release test check spec fuzz bench studio studio-test examples fmt docs clean
+.PHONY: build release test check verify spec fuzz bench studio studio-test examples fmt docs clean
 
 build:
 	cargo build
@@ -13,6 +13,9 @@ test:
 check:
 	cargo build --release
 	cargo test
+
+verify: release test spec fuzz
+	@echo "release checklist: docs/release-checklist.md"
 
 spec:
 	cargo run -p vela-spec -- tests/fixtures
