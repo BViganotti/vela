@@ -103,11 +103,15 @@ pub fn state_json(studio: &Studio, memory_start: u32) -> Json {
                 studio
                     .args
                     .iter()
-                    .map(|v| Json::Int(match v {
-                        Value::I32(x) => *x as i64,
-                        Value::I64(x) => *x,
-                        _ => 0,
-                    }))
+                    .map(|v| match v {
+                        Value::I32(x) => Json::Int(*x as i64),
+                        Value::I64(x) => Json::str(format!("i64:{x}")),
+                        Value::F32(x) => Json::str(format!("f32:{}", x)),
+                        Value::F64(x) => Json::str(format!("f64:{}", x)),
+                        Value::FuncRef(None) => Json::str("funcref:null"),
+                        Value::ExternRef(None) => Json::str("externref:null"),
+                        other => Json::str(other.to_string()),
+                    })
                     .collect(),
             ),
         ),

@@ -349,10 +349,28 @@ fn parse_args(value: Option<&Json>) -> Vec<Value> {
     match value.and_then(|v| v.as_arr()) {
         Some(items) => items
             .iter()
-            .filter_map(|v| v.as_i64())
-            .map(|v| Value::I32(v as i32))
+            .filter_map(|v| match v {
+                Json::Int(i) => Some(Value::I32(*i as i32)),
+                Json::Str(s) => parse_arg_str(s),
+                _ => None,
+            })
             .collect(),
         None => Vec::new(),
+    }
+}
+
+fn parse_arg_str(s: &str) -> Option<Value> {
+    let (ty, value) = s.split_once(':')?;
+    match ty {
+        "i32" => value.parse::<i32>().ok().map(Value::I32),
+        "i64" => value.parse::<i64>().ok().map(Value::I64),
+        "f32" => value.parse::<f32>().ok().map(Value::F32),
+        "f64" => value.parse::<f64>().ok().map(Value::F64),
+        "f32.bits" => value.parse::<u32>().ok().map(|b| Value::F32(f32::from_bits(b))),
+        "f64.bits" => value.parse::<u64>().ok().map(|b| Value::F64(f64::from_bits(b))),
+        "funcref" if value == "null" => Some(Value::FuncRef(None)),
+        "externref" if value == "null" => Some(Value::ExternRef(None)),
+        _ => None,
     }
 }
 
@@ -637,6 +655,18 @@ mod tests {
         assert_eq!(percent_decode("%2F%2f"), "//");
         assert_eq!(percent_decode("%zz"), "%zz");
         assert_eq!(percent_decode("100%"), "100%");
+    }
+
+    #[test]
+    fn typed_arguments() {
+        let json = crate::json::parse(r#"[1,"i64:4294967296","f32:1.5","f64.bits:4611686018427387904","bogus"]"#)
+            .unwrap();
+        let args = parse_args(Some(&json));
+        assert_eq!(args.len(), 4);
+        assert_eq!(args[0], Value::I32(1));
+        assert_eq!(args[1], Value::I64(4_294_967_296));
+        assert_eq!(args[2], Value::F32(1.5));
+        assert_eq!(args[3], Value::F64(2.0));
     }
 
     #[test]

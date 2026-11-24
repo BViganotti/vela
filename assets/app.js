@@ -263,6 +263,7 @@
 
   function parseArgs(text) {
     return text.split(/[\s,]+/).filter(Boolean).map((t) => {
+      if (/^(i32|i64|f32|f64|f32\.bits|f64\.bits|funcref|externref):/.test(t)) return t;
       const v = parseInt(t, 10);
       return Number.isFinite(v) ? v : 0;
     });
