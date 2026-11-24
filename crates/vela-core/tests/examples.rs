@@ -181,3 +181,14 @@ fn every_example_export_resolves() {
         assert!(found, "{name} exports {export}");
     }
 }
+
+#[test]
+fn example_directory_has_twenty_modules() {
+    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../examples");
+    let count = std::fs::read_dir(&dir)
+        .expect("examples directory")
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().extension().map(|x| x == "wat").unwrap_or(false))
+        .count();
+    assert_eq!(count, 20, "the documented example set has 20 modules");
+}
