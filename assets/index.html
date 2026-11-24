@@ -22,6 +22,7 @@
       <span id="status-pill" class="pill idle">idle</span>
       <span id="step-badge" class="badge">step 0</span>
       <span id="hash-badge" class="badge mono" title="trace / state hashes">—</span>
+      <button id="btn-help" class="ghost" title="keyboard shortcuts" aria-label="keyboard shortcuts">?</button>
     </div>
   </header>
 
@@ -148,6 +149,20 @@
     <span id="footer-hashes" class="mono">trace — · state —</span>
   </footer>
 </div>
+
+<dialog id="help-dialog" aria-label="Keyboard shortcuts">
+  <h2>Keyboard shortcuts</h2>
+  <dl>
+    <dt><kbd>Space</kbd></dt><dd>Step one instruction</dd>
+    <dt><kbd>R</kbd></dt><dd>Run / resume</dd>
+    <dt><kbd>B</kbd></dt><dd>Step back</dd>
+    <dt><kbd>Shift</kbd>+<kbd>R</kbd></dt><dd>Restart the session</dd>
+    <dt><kbd>?</kbd></dt><dd>This dialog</dd>
+  </dl>
+  <p class="hint">Shortcuts are ignored while typing in the editor or an input field.</p>
+  <form method="dialog"><button class="primary">Close</button></form>
+</dialog>
+
 <script src="/app.js"></script>
 </body>
 </html>

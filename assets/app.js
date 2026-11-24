@@ -409,6 +409,22 @@
     };
 
     $("btn-stream").onclick = streamTrace;
+    $("btn-help").onclick = () => {
+      const dialog = $("help-dialog");
+      if (dialog.showModal) dialog.showModal();
+    };
+    document.addEventListener("keydown", (ev) => {
+      const tag = (ev.target && ev.target.tagName) || "";
+      if (tag === "TEXTAREA" || tag === "INPUT" || tag === "SELECT") return;
+      if (ev.key === "?") { ev.preventDefault(); $("btn-help").click(); return; }
+      if (ev.key === " " || ev.key === "s") { ev.preventDefault(); action("step"); return; }
+      if (ev.key === "r" || ev.key === "R") {
+        ev.preventDefault();
+        if (ev.shiftKey) { state.maxStep = 0; action("restart"); } else action("run");
+        return;
+      }
+      if (ev.key === "b" || ev.key === "B") { ev.preventDefault(); action("back"); }
+    });
     $("trace-filter").addEventListener("change", () => {
       if (state.value) renderTrace(state.value);
     });

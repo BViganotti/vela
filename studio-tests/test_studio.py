@@ -103,6 +103,14 @@ def main() -> int:
             wait_text(page, "#step-badge", lambda t: t == "step 0", timeout=10)
             print("timeline rewind reached step 0")
 
+            # Keyboard shortcuts: step forward with Space, back with B.
+            page.click("#step-badge")
+            page.keyboard.press("Space")
+            wait_text(page, "#step-badge", lambda t: t == "step 1")
+            page.keyboard.press("b")
+            wait_text(page, "#step-badge", lambda t: t == "step 0")
+            print("keyboard shortcuts work")
+
             # Spec dashboard.
             page.click("#btn-spec")
             wait_text(
