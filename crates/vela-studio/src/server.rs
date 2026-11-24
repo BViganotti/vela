@@ -447,6 +447,9 @@ fn read_request(stream: &mut TcpStream) -> Result<Request, String> {
             return Err("request too large".to_string());
         }
         if let Some(pos) = find_subsequence(&buf, b"\r\n\r\n") {
+            if pos + 4 > MAX_HEADER_BYTES {
+                return Err("headers too large".to_string());
+            }
             header_end = pos + 4;
             break;
         }
@@ -709,6 +712,7 @@ mod tests {
             let mut stream = std::net::TcpStream::connect(addr).unwrap();
             let junk = "X".repeat(MAX_HEADER_BYTES + 10);
             let _ = write!(stream, "GET / HTTP/1.1\r\nX: {junk}\r\n\r\n");
+            let _ = stream.flush();
         });
         let (mut stream, _) = listener.accept().unwrap();
         let err = read_request(&mut stream).unwrap_err();
