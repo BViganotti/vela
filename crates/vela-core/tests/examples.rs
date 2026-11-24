@@ -75,6 +75,11 @@ fn examples_match_expected() {
         let out = invoke(&mut store, inst, "sum", &[Value::I32(100)]).expect("loops_sum.wat");
         assert_eq!(out, vec![Value::I32(4950)], "loops_sum.wat");
     }
+    {
+        let (mut store, inst) = load("bitwise.wat");
+        let out = invoke(&mut store, inst, "bits", &[]).expect("bitwise.wat");
+        assert_eq!(out, vec![Value::I32(19)], "bitwise.wat");
+    }
 }
 
 #[test]
@@ -99,6 +104,7 @@ fn every_example_export_resolves() {
         ("bulk_memory.wat", "bulk"),
         ("multi_value.wat", "pair"),
         ("loops_sum.wat", "sum"),
+        ("bitwise.wat", "bits"),
         ("traps_div.wat", "div"),
     ];
     for (name, export) in cases {
