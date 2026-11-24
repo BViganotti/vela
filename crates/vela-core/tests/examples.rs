@@ -32,6 +32,11 @@ fn examples_match_expected() {
         let out = invoke(&mut store, inst, "fib", &[Value::I32(10)]).expect("fibonacci.wat");
         assert_eq!(out, vec![Value::I32(55)], "fibonacci.wat");
     }
+    {
+        let (mut store, inst) = load("gcd.wat");
+        let out = invoke(&mut store, inst, "gcd", &[Value::I32(48), Value::I32(18)]).expect("gcd.wat");
+        assert_eq!(out, vec![Value::I32(6)], "gcd.wat");
+    }
 }
 
 #[test]
@@ -43,6 +48,7 @@ fn every_example_export_resolves() {
     let cases: &[(&str, &str)] = &[
         ("factorial.wat", "fact"),
         ("fibonacci.wat", "fib"),
+        ("gcd.wat", "gcd"),
     ];
     for (name, export) in cases {
         let (store, inst) = load(name);
