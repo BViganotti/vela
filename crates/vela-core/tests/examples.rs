@@ -70,6 +70,11 @@ fn examples_match_expected() {
         let out = invoke(&mut store, inst, "pair", &[Value::I32(7)]).expect("multi_value.wat");
         assert_eq!(out, vec![Value::I32(7), Value::I64(700)], "multi_value.wat");
     }
+    {
+        let (mut store, inst) = load("loops_sum.wat");
+        let out = invoke(&mut store, inst, "sum", &[Value::I32(100)]).expect("loops_sum.wat");
+        assert_eq!(out, vec![Value::I32(4950)], "loops_sum.wat");
+    }
 }
 
 #[test]
@@ -93,6 +98,7 @@ fn every_example_export_resolves() {
         ("globals_counter.wat", "counter"),
         ("bulk_memory.wat", "bulk"),
         ("multi_value.wat", "pair"),
+        ("loops_sum.wat", "sum"),
         ("traps_div.wat", "div"),
     ];
     for (name, export) in cases {
