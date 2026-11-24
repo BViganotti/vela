@@ -75,7 +75,11 @@ impl Response {
     }
 
     fn empty(status: u16) -> Self {
-        Response { status, content_type: "text/plain; charset=utf-8", body: Vec::new() }
+        Response {
+            status,
+            content_type: "text/plain; charset=utf-8",
+            body: Vec::new(),
+        }
     }
 }
 
@@ -112,10 +116,7 @@ pub fn run_server(mut studio: Studio, token: String, open_browser: bool) -> io::
         match handle(&mut studio, &request, &mut stream, &token, &origin) {
             Ok(stop) => shutdown = stop,
             Err(_) => {
-                let _ = write_response(
-                    &mut stream,
-                    &Response::error(500, "internal server error"),
-                );
+                let _ = write_response(&mut stream, &Response::error(500, "internal server error"));
             }
         }
     }
@@ -136,20 +137,29 @@ fn handle(
             return write_response(stream, &Response::empty(204)).map(|_| false);
         }
         "/app.js" => {
-            return write_response(stream, &Response::text(assets::APP_JS, "text/javascript; charset=utf-8"))
-                .map(|_| false);
+            return write_response(
+                stream,
+                &Response::text(assets::APP_JS, "text/javascript; charset=utf-8"),
+            )
+            .map(|_| false);
         }
         "/style.css" => {
-            return write_response(stream, &Response::text(assets::STYLE_CSS, "text/css; charset=utf-8"))
-                .map(|_| false);
+            return write_response(
+                stream,
+                &Response::text(assets::STYLE_CSS, "text/css; charset=utf-8"),
+            )
+            .map(|_| false);
         }
         "/" | "/index.html" => {
             if !authorized(req, token) {
                 return write_response(stream, &Response::error(403, "missing or invalid token"))
                     .map(|_| false);
             }
-            return write_response(stream, &Response::text(assets::INDEX_HTML, "text/html; charset=utf-8"))
-                .map(|_| false);
+            return write_response(
+                stream,
+                &Response::text(assets::INDEX_HTML, "text/html; charset=utf-8"),
+            )
+            .map(|_| false);
         }
         _ => {}
     }
@@ -158,8 +168,11 @@ fn handle(
             .map(|_| false);
     }
     if req.method == "POST" && !origin_allowed(req, origin) {
-        return write_response(stream, &Response::error(403, "cross-origin request rejected"))
-            .map(|_| false);
+        return write_response(
+            stream,
+            &Response::error(403, "cross-origin request rejected"),
+        )
+        .map(|_| false);
     }
 
     let response = match (req.method.as_str(), path) {
@@ -175,7 +188,10 @@ fn handle(
             &Json::obj(vec![
                 ("ok", Json::Bool(true)),
                 ("version", Json::str(env!("CARGO_PKG_VERSION"))),
-                ("step", Json::Int(studio.session().map(|s| s.exec.steps as i64).unwrap_or(0))),
+                (
+                    "step",
+                    Json::Int(studio.session().map(|s| s.exec.steps as i64).unwrap_or(0)),
+                ),
             ]),
             200,
         ),
@@ -215,7 +231,10 @@ fn handle(
         ("POST", "/api/action") => match req.json() {
             Ok(body) => {
                 let action = body.get("action").and_then(|v| v.as_str()).unwrap_or("");
-                let target = body.get("target").and_then(|v| v.as_i64()).map(|v| v.max(0) as u64);
+                let target = body
+                    .get("target")
+                    .and_then(|v| v.as_i64())
+                    .map(|v| v.max(0) as u64);
                 match studio.action(action, target) {
                     Ok(()) => Response::json(&api::state_json(studio, 0), 200),
                     Err(e) => Response::json(
@@ -252,9 +271,13 @@ fn handle(
                             .and_then(|v| v.as_i64())
                             .map(|v| v as u32)
                             .or_else(|| studio.current_func_addr());
-                        let offset = body.get("offset").and_then(|v| v.as_i64()).unwrap_or(0) as usize;
+                        let offset =
+                            body.get("offset").and_then(|v| v.as_i64()).unwrap_or(0) as usize;
                         if let (Some(func), Some(session)) = (func, studio.session.as_mut()) {
-                            let bp = vela_replay::Breakpoint::Instruction { func_addr: func, offset };
+                            let bp = vela_replay::Breakpoint::Instruction {
+                                func_addr: func,
+                                offset,
+                            };
                             if session.breakpoints.contains(&bp) {
                                 session.remove_breakpoint(&bp);
                             } else {
@@ -290,10 +313,11 @@ fn handle(
             Err(e) => Response::error(400, e),
         },
         ("POST", "/api/spec") => {
-            let custom = req
-                .json()
-                .ok()
-                .and_then(|b| b.get("source").and_then(|v| v.as_str()).map(|s| s.to_string()));
+            let custom = req.json().ok().and_then(|b| {
+                b.get("source")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string())
+            });
             Response::json(&api::spec_json(custom.as_deref()), 200)
         }
         ("POST", "/api/diff") => match req.json() {
@@ -310,13 +334,18 @@ fn handle(
             Err(e) => Response::error(400, e),
         },
         ("POST", "/api/shutdown") => {
-            let _ = write_response(stream, &Response::json(&Json::obj(vec![("ok", Json::Bool(true))]), 200));
+            let _ = write_response(
+                stream,
+                &Response::json(&Json::obj(vec![("ok", Json::Bool(true))]), 200),
+            );
             return Ok(true);
         }
-        (_, "/api/state" | "/api/health" | "/api/trace.json" | "/api/spec" | "/api/exports" | "/api/stream"
-            | "/api/load" | "/api/action" | "/api/breakpoints" | "/api/diff" | "/api/shutdown") => {
-            Response::error(405, "method not allowed")
-        }
+        (
+            _,
+            "/api/state" | "/api/health" | "/api/trace.json" | "/api/spec" | "/api/exports"
+            | "/api/stream" | "/api/load" | "/api/action" | "/api/breakpoints" | "/api/diff"
+            | "/api/shutdown",
+        ) => Response::error(405, "method not allowed"),
         (_, p) if p.starts_with("/api/") => Response::error(404, "unknown API route"),
         _ => Response::error(404, "not found"),
     };
@@ -366,8 +395,14 @@ fn parse_arg_str(s: &str) -> Option<Value> {
         "i64" => value.parse::<i64>().ok().map(Value::I64),
         "f32" => value.parse::<f32>().ok().map(Value::F32),
         "f64" => value.parse::<f64>().ok().map(Value::F64),
-        "f32.bits" => value.parse::<u32>().ok().map(|b| Value::F32(f32::from_bits(b))),
-        "f64.bits" => value.parse::<u64>().ok().map(|b| Value::F64(f64::from_bits(b))),
+        "f32.bits" => value
+            .parse::<u32>()
+            .ok()
+            .map(|b| Value::F32(f32::from_bits(b))),
+        "f64.bits" => value
+            .parse::<u64>()
+            .ok()
+            .map(|b| Value::F64(f64::from_bits(b))),
         "funcref" if value == "null" => Some(Value::FuncRef(None)),
         "externref" if value == "null" => Some(Value::ExternRef(None)),
         _ => None,
@@ -376,7 +411,11 @@ fn parse_arg_str(s: &str) -> Option<Value> {
 
 fn parse_i32_list(value: Option<&Json>) -> Vec<i32> {
     match value.and_then(|v| v.as_arr()) {
-        Some(items) => items.iter().filter_map(|v| v.as_i64()).map(|v| v as i32).collect(),
+        Some(items) => items
+            .iter()
+            .filter_map(|v| v.as_i64())
+            .map(|v| v as i32)
+            .collect(),
         None => Vec::new(),
     }
 }
@@ -385,7 +424,10 @@ fn stream_trace(studio: &Studio, stream: &mut TcpStream) -> io::Result<()> {
     let source = studio.source.clone();
     let export = studio.export.clone();
     let args = studio.args.clone();
-    let limits = Limits { max_steps: 5_000, ..studio.limits };
+    let limits = Limits {
+        max_steps: 5_000,
+        ..studio.limits
+    };
     let headers = "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-cache\r\nConnection: close\r\nX-Content-Type-Options: nosniff\r\n\r\n";
     stream.write_all(headers.as_bytes())?;
     stream.flush()?;
@@ -435,8 +477,14 @@ fn stream_trace(studio: &Studio, stream: &mut TcpStream) -> io::Result<()> {
     }
     let summary = Json::obj(vec![
         ("steps", Json::Int(session.exec.steps as i64)),
-        ("trace_hash", Json::str(format!("{:016x}", session.trace_hash()))),
-        ("state_hash", Json::str(format!("{:016x}", session.state_hash()))),
+        (
+            "trace_hash",
+            Json::str(format!("{:016x}", session.trace_hash())),
+        ),
+        (
+            "state_hash",
+            Json::str(format!("{:016x}", session.state_hash())),
+        ),
         ("finished", Json::Bool(session.exec.finished)),
         (
             "trap",
@@ -456,7 +504,9 @@ fn read_request(stream: &mut TcpStream) -> Result<Request, String> {
     let mut chunk = [0u8; 4096];
     let header_end;
     loop {
-        let n = stream.read(&mut chunk).map_err(|e| format!("read error: {e}"))?;
+        let n = stream
+            .read(&mut chunk)
+            .map_err(|e| format!("read error: {e}"))?;
         if n == 0 {
             return Err("connection closed before headers".to_string());
         }
@@ -475,13 +525,19 @@ fn read_request(stream: &mut TcpStream) -> Result<Request, String> {
             return Err("headers too large".to_string());
         }
     }
-    let head = std::str::from_utf8(&buf[..header_end])
-        .map_err(|_| "headers are not UTF-8".to_string())?;
+    let head =
+        std::str::from_utf8(&buf[..header_end]).map_err(|_| "headers are not UTF-8".to_string())?;
     let mut lines = head.split("\r\n");
     let request_line = lines.next().ok_or_else(|| "empty request".to_string())?;
     let mut parts = request_line.split_whitespace();
-    let method = parts.next().ok_or_else(|| "missing method".to_string())?.to_string();
-    let target = parts.next().ok_or_else(|| "missing target".to_string())?.to_string();
+    let method = parts
+        .next()
+        .ok_or_else(|| "missing method".to_string())?
+        .to_string();
+    let target = parts
+        .next()
+        .ok_or_else(|| "missing target".to_string())?
+        .to_string();
     let version = parts.next().unwrap_or("HTTP/1.1");
     if !version.starts_with("HTTP/1.") {
         return Err("unsupported HTTP version".to_string());
@@ -508,14 +564,22 @@ fn read_request(stream: &mut TcpStream) -> Result<Request, String> {
     }
     let mut body = buf[header_end..].to_vec();
     while body.len() < content_length {
-        let n = stream.read(&mut chunk).map_err(|e| format!("read error: {e}"))?;
+        let n = stream
+            .read(&mut chunk)
+            .map_err(|e| format!("read error: {e}"))?;
         if n == 0 {
             return Err("connection closed before body".to_string());
         }
         body.extend_from_slice(&chunk[..n]);
     }
     body.truncate(content_length);
-    Ok(Request { method, path, query, headers, body })
+    Ok(Request {
+        method,
+        path,
+        query,
+        headers,
+        body,
+    })
 }
 
 fn find_subsequence(haystack: &[u8], needle: &[u8]) -> Option<usize> {
@@ -659,8 +723,10 @@ mod tests {
 
     #[test]
     fn typed_arguments() {
-        let json = crate::json::parse(r#"[1,"i64:4294967296","f32:1.5","f64.bits:4611686018427387904","bogus"]"#)
-            .unwrap();
+        let json = crate::json::parse(
+            r#"[1,"i64:4294967296","f32:1.5","f64.bits:4611686018427387904","bogus"]"#,
+        )
+        .unwrap();
         let args = parse_args(Some(&json));
         assert_eq!(args.len(), 4);
         assert_eq!(args[0], Value::I32(1));
@@ -693,17 +759,35 @@ mod tests {
     #[test]
     fn origin_policy_blocks_cross_site_posts() {
         let origin = "http://127.0.0.1:9000";
-        assert!(origin_allowed(&request("POST", "/api/action", Some("t"), None), origin));
         assert!(origin_allowed(
-            &request("POST", "/api/action", Some("t"), Some("http://127.0.0.1:9000")),
+            &request("POST", "/api/action", Some("t"), None),
             origin
         ));
         assert!(origin_allowed(
-            &request("POST", "/api/action", Some("t"), Some("http://localhost:9000")),
+            &request(
+                "POST",
+                "/api/action",
+                Some("t"),
+                Some("http://127.0.0.1:9000")
+            ),
+            origin
+        ));
+        assert!(origin_allowed(
+            &request(
+                "POST",
+                "/api/action",
+                Some("t"),
+                Some("http://localhost:9000")
+            ),
             origin
         ));
         assert!(!origin_allowed(
-            &request("POST", "/api/action", Some("t"), Some("http://evil.example")),
+            &request(
+                "POST",
+                "/api/action",
+                Some("t"),
+                Some("http://evil.example")
+            ),
             origin
         ));
     }

@@ -66,14 +66,20 @@ fn run0(export: &str) -> Result<Vec<Value>, Trap> {
 
 #[test]
 fn indirect_calls_and_type_errors() {
-    assert_eq!(run("pick", vec![Value::I32(1)]).unwrap(), vec![Value::I32(9)]);
+    assert_eq!(
+        run("pick", vec![Value::I32(1)]).unwrap(),
+        vec![Value::I32(9)]
+    );
     assert_eq!(run0("typeerr"), Err(Trap::IndirectCallTypeMismatch));
     assert_eq!(run0("oob"), Err(Trap::UndefinedElement));
 }
 
 #[test]
 fn table_get_set_and_null_slots() {
-    assert_eq!(run("nullslot", vec![Value::I32(1)]).unwrap(), vec![Value::I32(1)]);
+    assert_eq!(
+        run("nullslot", vec![Value::I32(1)]).unwrap(),
+        vec![Value::I32(1)]
+    );
     assert_eq!(run0("getoob"), Err(Trap::TableOutOfBounds));
     assert_eq!(run0("size").unwrap(), vec![Value::I32(3)]);
 }

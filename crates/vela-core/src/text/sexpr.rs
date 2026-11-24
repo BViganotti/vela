@@ -118,8 +118,16 @@ impl Parser {
         let tok = self.tokens[self.pos].clone();
         self.pos += 1;
         match tok.kind {
-            TokenKind::Atom(a) => Ok(Sexpr { kind: SexprKind::Atom(a), line: tok.line, col: tok.col }),
-            TokenKind::Str(b) => Ok(Sexpr { kind: SexprKind::Str(b), line: tok.line, col: tok.col }),
+            TokenKind::Atom(a) => Ok(Sexpr {
+                kind: SexprKind::Atom(a),
+                line: tok.line,
+                col: tok.col,
+            }),
+            TokenKind::Str(b) => Ok(Sexpr {
+                kind: SexprKind::Str(b),
+                line: tok.line,
+                col: tok.col,
+            }),
             TokenKind::RParen => Err(TextError::new(tok.line, tok.col, "unexpected ')'")),
             TokenKind::LParen => {
                 let mut items = Vec::new();
@@ -133,7 +141,11 @@ impl Parser {
                     }
                     items.push(self.parse_one(depth + 1)?);
                 }
-                Ok(Sexpr { kind: SexprKind::List(items), line: tok.line, col: tok.col })
+                Ok(Sexpr {
+                    kind: SexprKind::List(items),
+                    line: tok.line,
+                    col: tok.col,
+                })
             }
         }
     }

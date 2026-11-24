@@ -170,15 +170,17 @@ fn body_to_wat(out: &mut String, body: &FuncBody) {
 
 fn elem_to_wat(out: &mut String, e: &Element) {
     let (prefix, use_funcs) = match &e.mode {
-        ElementMode::Active { table, offset } => {
-            (format!("(table {table}) (offset {})", inline_expr(offset)), true)
-        }
+        ElementMode::Active { table, offset } => (
+            format!("(table {table}) (offset {})", inline_expr(offset)),
+            true,
+        ),
         ElementMode::Passive => ("".to_string(), false),
         ElementMode::Declarative => ("declare".to_string(), false),
     };
-    let all_funcs = e.init.iter().all(|item| {
-        matches!(item.as_slice(), [Instr::RefFunc(_), Instr::End])
-    });
+    let all_funcs = e
+        .init
+        .iter()
+        .all(|item| matches!(item.as_slice(), [Instr::RefFunc(_), Instr::End]));
     out.push_str("  (elem");
     if !prefix.is_empty() {
         out.push(' ');
@@ -210,7 +212,10 @@ fn elem_to_wat(out: &mut String, e: &Element) {
 
 pub fn inline_expr(expr: &[Instr]) -> String {
     let real: Vec<&Instr> = expr.iter().filter(|i| !matches!(i, Instr::End)).collect();
-    real.iter().map(|i| instr_text(i)).collect::<Vec<_>>().join(" ")
+    real.iter()
+        .map(|i| instr_text(i))
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 pub fn instr_text(instr: &Instr) -> String {

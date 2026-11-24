@@ -59,7 +59,11 @@ impl BodyInfo {
 pub enum InstantiateError {
     Validation(ValidationError),
     Trap(Trap),
-    Import { module: String, name: String, message: String },
+    Import {
+        module: String,
+        name: String,
+        message: String,
+    },
     Limit(&'static str),
 }
 
@@ -68,7 +72,11 @@ impl fmt::Display for InstantiateError {
         match self {
             InstantiateError::Validation(e) => write!(f, "invalid module: {e}"),
             InstantiateError::Trap(t) => write!(f, "instantiation trapped: {t}"),
-            InstantiateError::Import { module, name, message } => {
+            InstantiateError::Import {
+                module,
+                name,
+                message,
+            } => {
                 write!(f, "import {module}.{name}: {message}")
             }
             InstantiateError::Limit(m) => write!(f, "instantiation limit: {m}"),
@@ -121,7 +129,9 @@ fn eval_const(
                 stack.push(Value::FuncRef(Some(addr)));
             }
             Instr::GlobalGet(i) => {
-                let addr = *global_addrs.get(*i as usize).ok_or(Trap::UndefinedElement)?;
+                let addr = *global_addrs
+                    .get(*i as usize)
+                    .ok_or(Trap::UndefinedElement)?;
                 stack.push(store.global(addr)?.get());
             }
             _ => return Err(Trap::TypeMismatch("constant expression")),
@@ -183,18 +193,23 @@ fn instantiate_inner(
         match (imp.desc, ext) {
             (ImportDesc::Func(type_idx), ExternVal::Func(addr)) => {
                 let expected = &module.types[type_idx as usize];
-                let actual = &store.func(addr).map_err(|_| {
-                    import_error(&imp.module, &imp.name, "unknown function address")
-                })?.ty;
+                let actual = &store
+                    .func(addr)
+                    .map_err(|_| import_error(&imp.module, &imp.name, "unknown function address"))?
+                    .ty;
                 if !func_type_matches(expected, actual) {
-                    return Err(import_error(&imp.module, &imp.name, "function type mismatch"));
+                    return Err(import_error(
+                        &imp.module,
+                        &imp.name,
+                        "function type mismatch",
+                    ));
                 }
                 func_addrs.push(addr);
             }
             (ImportDesc::Table(expected), ExternVal::Table(addr)) => {
-                let actual = store.table(addr).map_err(|_| {
-                    import_error(&imp.module, &imp.name, "unknown table address")
-                })?;
+                let actual = store
+                    .table(addr)
+                    .map_err(|_| import_error(&imp.module, &imp.name, "unknown table address"))?;
                 let actual_type = crate::types::TableType {
                     elem: actual.elem_type(),
                     limits: actual.limits(),
@@ -205,19 +220,21 @@ fn instantiate_inner(
                 table_addrs.push(addr);
             }
             (ImportDesc::Memory(expected), ExternVal::Memory(addr)) => {
-                let actual = store.memory(addr).map_err(|_| {
-                    import_error(&imp.module, &imp.name, "unknown memory address")
-                })?;
-                let actual_type = crate::types::MemoryType { limits: actual.limits() };
+                let actual = store
+                    .memory(addr)
+                    .map_err(|_| import_error(&imp.module, &imp.name, "unknown memory address"))?;
+                let actual_type = crate::types::MemoryType {
+                    limits: actual.limits(),
+                };
                 if !memory_type_matches(&expected, &actual_type) {
                     return Err(import_error(&imp.module, &imp.name, "memory type mismatch"));
                 }
                 mem_addrs.push(addr);
             }
             (ImportDesc::Global(expected), ExternVal::Global(addr)) => {
-                let actual = store.global(addr).map_err(|_| {
-                    import_error(&imp.module, &imp.name, "unknown global address")
-                })?;
+                let actual = store
+                    .global(addr)
+                    .map_err(|_| import_error(&imp.module, &imp.name, "unknown global address"))?;
                 let actual_type = crate::types::GlobalType {
                     val: actual.ty(),
                     mutable: actual.is_mutable(),
@@ -231,7 +248,11 @@ fn instantiate_inner(
                 return Err(import_error(
                     &imp.module,
                     &imp.name,
-                    format!("kind mismatch: expected {}, found {}", desc.extern_type().kind_name(), ext.kind()),
+                    format!(
+                        "kind mismatch: expected {}, found {}",
+                        desc.extern_type().kind_name(),
+                        ext.kind()
+                    ),
                 ))
             }
         }
@@ -242,11 +263,16 @@ fn instantiate_inner(
         let ty = module.types[f.type_idx as usize].clone();
         let addr = store.alloc_func(FuncInst {
             ty,
-            kind: FuncKind::Wasm { instance: instance_idx, func: 0 },
+            kind: FuncKind::Wasm {
+                instance: instance_idx,
+                func: 0,
+            },
         });
         // Patch the module-level function index.
-        if let Some(FuncInst { kind: FuncKind::Wasm { func, .. }, .. }) =
-            store.funcs.get_mut(addr as usize)
+        if let Some(FuncInst {
+            kind: FuncKind::Wasm { func, .. },
+            ..
+        }) = store.funcs.get_mut(addr as usize)
         {
             *func = func_addrs.len() as u32;
         }
@@ -271,7 +297,9 @@ fn instantiate_inner(
     for g in &module.globals {
         let v = eval_const(store, &g.init, &func_addrs, &global_addrs)?;
         if v.ty() != g.ty.val {
-            return Err(InstantiateError::Trap(Trap::TypeMismatch("global initializer")));
+            return Err(InstantiateError::Trap(Trap::TypeMismatch(
+                "global initializer",
+            )));
         }
         let addr = store.alloc_global(GlobalInst::new(g.ty, v));
         global_addrs.push(addr);

@@ -134,7 +134,11 @@ impl<'a> Lexer<'a> {
                     self.bump();
                     depth += 1;
                     if depth > 1000 {
-                        return Err(TextError::new(self.line, self.col, "comment nesting too deep"));
+                        return Err(TextError::new(
+                            self.line,
+                            self.col,
+                            "comment nesting too deep",
+                        ));
                     }
                 }
             } else if c == ';' && self.peek() == Some(')') {
@@ -145,7 +149,11 @@ impl<'a> Lexer<'a> {
                 }
             }
         }
-        Err(TextError::new(self.line, self.col, "unterminated block comment"))
+        Err(TextError::new(
+            self.line,
+            self.col,
+            "unterminated block comment",
+        ))
     }
 
     fn atom(&mut self) -> TextResult<String> {
@@ -171,9 +179,7 @@ impl<'a> Lexer<'a> {
         loop {
             let c = match self.bump() {
                 Some(c) => c,
-                None => {
-                    return Err(TextError::new(start_line, start_col, "unterminated string"))
-                }
+                None => return Err(TextError::new(start_line, start_col, "unterminated string")),
             };
             match c {
                 '"' => return Ok(out),
@@ -198,7 +204,11 @@ impl<'a> Lexer<'a> {
                 }
             }
             if out.len() > 64 * 1024 * 1024 {
-                return Err(TextError::new(self.line, self.col, "string literal too long"));
+                return Err(TextError::new(
+                    self.line,
+                    self.col,
+                    "string literal too long",
+                ));
             }
         }
     }
@@ -217,7 +227,11 @@ impl<'a> Lexer<'a> {
             '\'' => out.push(b'\''),
             'u' => {
                 if self.bump() != Some('{') {
-                    return Err(TextError::new(self.line, self.col, "malformed unicode escape"));
+                    return Err(TextError::new(
+                        self.line,
+                        self.col,
+                        "malformed unicode escape",
+                    ));
                 }
                 let mut value: u32 = 0;
                 let mut digits = 0;
@@ -241,7 +255,11 @@ impl<'a> Lexer<'a> {
                     value = value.saturating_mul(16).saturating_add(digit);
                     digits += 1;
                     if digits > 6 {
-                        return Err(TextError::new(self.line, self.col, "unicode escape too long"));
+                        return Err(TextError::new(
+                            self.line,
+                            self.col,
+                            "unicode escape too long",
+                        ));
                     }
                 }
                 if digits == 0 {

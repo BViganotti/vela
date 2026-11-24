@@ -21,6 +21,9 @@ impl WastReport {
     }
 
     pub fn summary(&self) -> String {
-        format!("{}: {}/{} assertions passed", self.file, self.passed, self.total)
+        format!(
+            "{}: {}/{} assertions passed",
+            self.file, self.passed, self.total
+        )
     }
 }

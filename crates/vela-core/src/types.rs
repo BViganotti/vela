@@ -15,7 +15,10 @@ pub enum ValType {
 
 impl ValType {
     pub fn is_num(self) -> bool {
-        matches!(self, ValType::I32 | ValType::I64 | ValType::F32 | ValType::F64)
+        matches!(
+            self,
+            ValType::I32 | ValType::I64 | ValType::F32 | ValType::F64
+        )
     }
 
     pub fn is_ref(self) -> bool {
@@ -129,7 +132,10 @@ pub struct GlobalType {
 
 impl GlobalType {
     pub fn const_of(val: ValType) -> Self {
-        GlobalType { val, mutable: false }
+        GlobalType {
+            val,
+            mutable: false,
+        }
     }
 }
 

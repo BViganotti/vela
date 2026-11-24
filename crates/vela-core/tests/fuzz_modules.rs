@@ -18,7 +18,11 @@ impl Rng {
         x
     }
     fn below(&mut self, n: usize) -> usize {
-        if n == 0 { 0 } else { (self.next() % n as u64) as usize }
+        if n == 0 {
+            0
+        } else {
+            (self.next() % n as u64) as usize
+        }
     }
     fn byte(&mut self) -> u8 {
         (self.next() & 0xff) as u8
@@ -130,9 +134,18 @@ fn thousand_mutated_modules_never_panic() {
             }
         }
     }
-    assert!(decoded > 0, "expected at least one mutated module to decode");
-    assert!(validated > 0, "expected at least one mutated module to validate");
-    assert!(instantiated > 0, "expected at least one mutated module to instantiate");
+    assert!(
+        decoded > 0,
+        "expected at least one mutated module to decode"
+    );
+    assert!(
+        validated > 0,
+        "expected at least one mutated module to validate"
+    );
+    assert!(
+        instantiated > 0,
+        "expected at least one mutated module to instantiate"
+    );
 }
 
 #[test]

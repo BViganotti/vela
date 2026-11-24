@@ -17,14 +17,13 @@ pub struct TableInst {
 
 impl TableInst {
     pub fn new(elem_type: ValType, limits: Limits) -> Self {
-        Self::try_new(elem_type, limits, DEFAULT_MAX_TABLE_ENTRIES)
-            .unwrap_or_else(|| TableInst {
-                elems: Vec::new(),
-                elem_type,
-                min: 0,
-                max: Some(0),
-                entry_cap: 0,
-            })
+        Self::try_new(elem_type, limits, DEFAULT_MAX_TABLE_ENTRIES).unwrap_or_else(|| TableInst {
+            elems: Vec::new(),
+            elem_type,
+            min: 0,
+            max: Some(0),
+            entry_cap: 0,
+        })
     }
 
     pub fn try_new(elem_type: ValType, limits: Limits, entry_cap: u32) -> Option<Self> {
@@ -64,14 +63,20 @@ impl TableInst {
     }
 
     pub fn get(&self, i: u32) -> Result<Value, Trap> {
-        self.elems.get(i as usize).copied().ok_or(Trap::TableOutOfBounds)
+        self.elems
+            .get(i as usize)
+            .copied()
+            .ok_or(Trap::TableOutOfBounds)
     }
 
     pub fn set(&mut self, i: u32, v: Value) -> Result<(), Trap> {
         if v.ty() != self.elem_type {
             return Err(Trap::TypeMismatch("table element type"));
         }
-        let slot = self.elems.get_mut(i as usize).ok_or(Trap::TableOutOfBounds)?;
+        let slot = self
+            .elems
+            .get_mut(i as usize)
+            .ok_or(Trap::TableOutOfBounds)?;
         *slot = v;
         Ok(())
     }
@@ -169,6 +174,9 @@ mod tests {
     #[test]
     fn rejects_wrong_reference_type() {
         let mut t = TableInst::new(ValType::FuncRef, Limits::new(1, None));
-        assert_eq!(t.set(0, Value::ExternRef(None)), Err(Trap::TypeMismatch("table element type")));
+        assert_eq!(
+            t.set(0, Value::ExternRef(None)),
+            Err(Trap::TypeMismatch("table element type"))
+        );
     }
 }

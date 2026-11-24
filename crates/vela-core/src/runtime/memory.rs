@@ -15,13 +15,12 @@ pub struct MemoryInst {
 
 impl MemoryInst {
     pub fn new(limits: Limits) -> Self {
-        Self::try_new(limits, DEFAULT_MAX_MEMORY_BYTES)
-            .unwrap_or_else(|| MemoryInst {
-                data: Vec::new(),
-                min: 0,
-                max: Some(0),
-                max_bytes: 0,
-            })
+        Self::try_new(limits, DEFAULT_MAX_MEMORY_BYTES).unwrap_or_else(|| MemoryInst {
+            data: Vec::new(),
+            min: 0,
+            max: Some(0),
+            max_bytes: 0,
+        })
     }
 
     /// Allocate a memory, refusing to reserve more than `max_bytes`.
@@ -85,7 +84,11 @@ impl MemoryInst {
         }
         // Reserve before zero-filling so allocation failure is reported as a
         // failed grow rather than a panic.
-        if self.data.try_reserve_exact(new_len - self.data.len()).is_err() {
+        if self
+            .data
+            .try_reserve_exact(new_len - self.data.len())
+            .is_err()
+        {
             return None;
         }
         self.data.resize(new_len, 0);

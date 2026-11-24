@@ -39,8 +39,20 @@ enum Op {
 }
 
 const OPS: [Op; 14] = [
-    Op::Add, Op::Sub, Op::Mul, Op::And, Op::Or, Op::Xor, Op::Shl, Op::ShrS, Op::ShrU,
-    Op::Rotl, Op::Rotr, Op::Eq, Op::LtS, Op::GeU,
+    Op::Add,
+    Op::Sub,
+    Op::Mul,
+    Op::And,
+    Op::Or,
+    Op::Xor,
+    Op::Shl,
+    Op::ShrS,
+    Op::ShrU,
+    Op::Rotl,
+    Op::Rotr,
+    Op::Eq,
+    Op::LtS,
+    Op::GeU,
 ];
 
 #[derive(Clone, Debug)]
@@ -59,7 +71,11 @@ fn gen(rng: &mut Rng, depth: u32) -> Expr {
         }
     } else {
         let op = OPS[rng.below(OPS.len() as u64) as usize];
-        Expr::Bin(op, Box::new(gen(rng, depth - 1)), Box::new(gen(rng, depth - 1)))
+        Expr::Bin(
+            op,
+            Box::new(gen(rng, depth - 1)),
+            Box::new(gen(rng, depth - 1)),
+        )
     }
 }
 
@@ -137,6 +153,10 @@ fn random_typed_expressions_match_reference_evaluator() {
         };
         let out = invoke(&mut store, addr, vec![Value::I32(arg)], Limits::default())
             .unwrap_or_else(|e| panic!("case {case} trap: {e}\n{wat}"));
-        assert_eq!(out, vec![Value::I32(expected)], "case {case}: {wat} with {arg}");
+        assert_eq!(
+            out,
+            vec![Value::I32(expected)],
+            "case {case}: {wat} with {arg}"
+        );
     }
 }

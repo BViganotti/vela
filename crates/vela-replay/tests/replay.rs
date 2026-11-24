@@ -4,7 +4,7 @@ use vela_core::runtime::{instantiate, invoke_export, Limits, Registry, Store, Va
 use vela_core::text::parse_wat;
 use vela_core::validate::validate_module;
 use vela_replay::{
-    first_divergence, fingerprint as record, Breakpoint, RunStop, Session, SessionError,
+    fingerprint as record, first_divergence, Breakpoint, RunStop, Session, SessionError,
 };
 
 const LOOP_WAT: &str = r#"
@@ -40,18 +40,12 @@ const LOOP_WAT: &str = r#"
     local.get $sum))
 "#;
 
-fn make_session(
-    src: &str,
-    export: &str,
-    args: Vec<Value>,
-    interval: u64,
-) -> Session {
+fn make_session(src: &str, export: &str, args: Vec<Value>, interval: u64) -> Session {
     let module = parse_wat(src).expect("parse");
     validate_module(&module).expect("validate");
     let mut store = Store::new();
     let inst = instantiate(&mut store, module, &Registry::new()).expect("instantiate");
-    Session::from_instance(store, inst, export, args, Limits::default(), interval)
-        .expect("session")
+    Session::from_instance(store, inst, export, args, Limits::default(), interval).expect("session")
 }
 
 fn run_to_end(s: &mut Session) -> Vec<Value> {
@@ -80,15 +74,27 @@ fn forward_backward_states_match() {
             vela_core::runtime::StepResult::Trapped(t) => panic!("trap: {t}"),
         }
     }
-    assert!(s.exec.steps > 500, "need at least 500 steps, got {}", s.exec.steps);
+    assert!(
+        s.exec.steps > 500,
+        "need at least 500 steps, got {}",
+        s.exec.steps
+    );
     let total = s.exec.steps;
 
     // 500 checkpoints spread over the run, rewound in descending order.
     for k in (0..500u64).rev() {
         let target = total * k / 499;
         s.rewind_to(target).expect("rewind");
-        assert_eq!(s.state_hash(), state_hashes[target as usize], "state at {target}");
-        assert_eq!(s.trace_hash(), trace_hashes[target as usize], "trace at {target}");
+        assert_eq!(
+            s.state_hash(),
+            state_hashes[target as usize],
+            "state at {target}"
+        );
+        assert_eq!(
+            s.trace_hash(),
+            trace_hashes[target as usize],
+            "trace at {target}"
+        );
     }
 }
 
@@ -121,9 +127,19 @@ fn sequential_step_back_matches_forward() {
 
 #[test]
 fn hundred_replays_are_identical() {
-    let first = record(&mut make_session(LOOP_WAT, "count", vec![Value::I32(30)], 64));
+    let first = record(&mut make_session(
+        LOOP_WAT,
+        "count",
+        vec![Value::I32(30)],
+        64,
+    ));
     for i in 0..99 {
-        let run = record(&mut make_session(LOOP_WAT, "count", vec![Value::I32(30)], 64));
+        let run = record(&mut make_session(
+            LOOP_WAT,
+            "count",
+            vec![Value::I32(30)],
+            64,
+        ));
         assert_eq!(run, first, "replay {i} diverged");
         assert!(run.steps > 0);
         assert_ne!(run.trace_hash, 0);
@@ -172,8 +188,15 @@ fn host_session() -> Session {
     );
     registry.install_hosts(&mut store);
     let inst = instantiate(&mut store, module, &registry).unwrap();
-    Session::from_instance(store, inst, "work", vec![Value::I32(20)], Limits::default(), 8)
-        .unwrap()
+    Session::from_instance(
+        store,
+        inst,
+        "work",
+        vec![Value::I32(20)],
+        Limits::default(),
+        8,
+    )
+    .unwrap()
 }
 
 #[test]
@@ -200,9 +223,15 @@ fn host_calls_replay_deterministically() {
 fn instruction_breakpoint_stops_before_execution() {
     let mut s = make_session(LOOP_WAT, "count", vec![Value::I32(3)], 4);
     let func_addr = s.exec.frames[0].func_addr;
-    s.add_breakpoint(Breakpoint::Instruction { func_addr, offset: 0 });
+    s.add_breakpoint(Breakpoint::Instruction {
+        func_addr,
+        offset: 0,
+    });
     let stop = s.run();
-    assert!(matches!(stop, RunStop::Breakpoint(Breakpoint::Instruction { offset: 0, .. })));
+    assert!(matches!(
+        stop,
+        RunStop::Breakpoint(Breakpoint::Instruction { offset: 0, .. })
+    ));
     assert_eq!(s.exec.steps, 0);
     s.resume();
     assert!(s.exec.steps > 0);
@@ -220,9 +249,14 @@ fn function_breakpoint_triggers_on_entry() {
     let inst = instantiate(&mut store, module, &Registry::new()).unwrap();
     let inner_addr = store.instances[inst as usize].func_addrs[0];
     let mut s = Session::from_instance(store, inst, "outer", vec![], Limits::default(), 4).unwrap();
-    s.add_breakpoint(Breakpoint::Function { func_addr: inner_addr });
+    s.add_breakpoint(Breakpoint::Function {
+        func_addr: inner_addr,
+    });
     let stop = s.run();
-    assert!(matches!(stop, RunStop::Breakpoint(Breakpoint::Function { .. })));
+    assert!(matches!(
+        stop,
+        RunStop::Breakpoint(Breakpoint::Function { .. })
+    ));
     assert_eq!(s.exec.steps, 1);
     assert_eq!(s.exec.frames.len(), 2);
     assert_eq!(s.exec.frames.last().unwrap().func_addr, inner_addr);
@@ -252,7 +286,10 @@ fn memory_breakpoint_matches_effective_address() {
     .unwrap();
     s.add_breakpoint(Breakpoint::MemoryAddress(101));
     let stop = s.run();
-    assert!(matches!(stop, RunStop::Breakpoint(Breakpoint::MemoryAddress(101))));
+    assert!(matches!(
+        stop,
+        RunStop::Breakpoint(Breakpoint::MemoryAddress(101))
+    ));
     let (_, offset, instr) = s.current_instruction().unwrap();
     assert_eq!(offset, 2);
     assert_eq!(instr.name(), "i32.store");
@@ -291,7 +328,14 @@ fn replay_wat_matches_direct_invocation() {
     let module = parse_wat(src).unwrap();
     let mut store = Store::new();
     let inst = instantiate(&mut store, module, &Registry::new()).unwrap();
-    let out = invoke_export(&mut store, inst, "f", vec![Value::I32(7)], Limits::default()).unwrap();
+    let out = invoke_export(
+        &mut store,
+        inst,
+        "f",
+        vec![Value::I32(7)],
+        Limits::default(),
+    )
+    .unwrap();
     assert_eq!(out, vec![Value::I32(63)]);
     let r = vela_replay::replay_wat(src, "f", vec![Value::I32(7)], Limits::default()).unwrap();
     assert!(r.steps > 0);
@@ -308,7 +352,12 @@ fn cannot_rewind_forward() {
 
 #[test]
 fn session_reports_errors() {
-    let err = Session::from_wat("(module (func (export \"f\") (result i32) i64.const 0))", "f", vec![], Limits::default());
+    let err = Session::from_wat(
+        "(module (func (export \"f\") (result i32) i64.const 0))",
+        "f",
+        vec![],
+        Limits::default(),
+    );
     assert!(matches!(err, Err(SessionError::Instantiate(_))));
     let err = Session::from_wat("(module)", "missing", vec![], Limits::default());
     assert!(matches!(err, Err(SessionError::MissingExport(_))));

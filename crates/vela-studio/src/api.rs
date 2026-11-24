@@ -24,14 +24,18 @@ pub fn value_json(v: &Value) -> Json {
         Value::ExternRef(None) => ("externref", "null".to_string()),
         Value::ExternRef(Some(a)) => ("externref", format!("extern@{a}")),
     };
-    Json::obj(vec![("type", Json::str(ty)), ("display", Json::str(display))])
+    Json::obj(vec![
+        ("type", Json::str(ty)),
+        ("display", Json::str(display)),
+    ])
 }
 
 fn breakpoint_json(bp: &Breakpoint) -> Json {
     match bp {
-        Breakpoint::Function { func_addr } => {
-            Json::obj(vec![("kind", Json::str("function")), ("func", Json::Int(*func_addr as i64))])
-        }
+        Breakpoint::Function { func_addr } => Json::obj(vec![
+            ("kind", Json::str("function")),
+            ("func", Json::Int(*func_addr as i64)),
+        ]),
         Breakpoint::Instruction { func_addr, offset } => Json::obj(vec![
             ("kind", Json::str("instruction")),
             ("func", Json::Int(*func_addr as i64)),
@@ -45,7 +49,10 @@ fn breakpoint_json(bp: &Breakpoint) -> Json {
     }
 }
 
-fn disasm_for(session: &Session, func_addr: Option<u32>) -> (Option<String>, Option<usize>, Vec<Json>) {
+fn disasm_for(
+    session: &Session,
+    func_addr: Option<u32>,
+) -> (Option<String>, Option<usize>, Vec<Json>) {
     let Some(addr) = func_addr else {
         return (None, None, Vec::new());
     };
@@ -93,10 +100,13 @@ pub fn state_json(studio: &Studio, memory_start: u32) -> Json {
         ("source", Json::str(studio.source.clone())),
         ("export", Json::str(studio.export.clone())),
         ("message", Json::str(studio.message.clone())),
-        ("error", match &studio.error {
-            Some(e) => Json::str(e.clone()),
-            None => Json::Null,
-        }),
+        (
+            "error",
+            match &studio.error {
+                Some(e) => Json::str(e.clone()),
+                None => Json::Null,
+            },
+        ),
         (
             "args",
             Json::Arr(
@@ -136,25 +146,37 @@ pub fn state_json(studio: &Studio, memory_start: u32) -> Json {
     pairs.push(("stack_height", Json::Int(session.exec.stack.len() as i64)));
     pairs.push(("trace_hash", Json::str(hex_hash(session.trace_hash()))));
     pairs.push(("state_hash", Json::str(hex_hash(session.state_hash()))));
-    pairs.push(("memory_hash", Json::str(hex_hash(session.store.state_hash()))));
+    pairs.push((
+        "memory_hash",
+        Json::str(hex_hash(session.store.state_hash())),
+    ));
     pairs.push(("trace_total", Json::Int(session.trace.len() as i64)));
     pairs.push(("checkpoints", Json::Int(session.checkpoint_count() as i64)));
     pairs.push(("can_back", Json::Bool(session.exec.steps > 0)));
 
     let func_addr = studio.current_func_addr();
     let (func_name, current_offset, disasm) = disasm_for(session, func_addr);
-    pairs.push(("current_func", match func_addr {
-        Some(a) => Json::Int(a as i64),
-        None => Json::Null,
-    }));
-    pairs.push(("current_func_name", match func_name {
-        Some(n) => Json::str(n),
-        None => Json::Null,
-    }));
-    pairs.push(("pc", match current_offset {
-        Some(o) => Json::Int(o as i64),
-        None => Json::Null,
-    }));
+    pairs.push((
+        "current_func",
+        match func_addr {
+            Some(a) => Json::Int(a as i64),
+            None => Json::Null,
+        },
+    ));
+    pairs.push((
+        "current_func_name",
+        match func_name {
+            Some(n) => Json::str(n),
+            None => Json::Null,
+        },
+    ));
+    pairs.push((
+        "pc",
+        match current_offset {
+            Some(o) => Json::Int(o as i64),
+            None => Json::Null,
+        },
+    ));
     pairs.push(("disasm", Json::Arr(disasm)));
 
     pairs.push((
@@ -229,11 +251,21 @@ pub fn state_json(studio: &Studio, memory_start: u32) -> Json {
                         let sig = session
                             .store
                             .func(*addr)
-                            .map(|f| format!(
-                                "({}) -> ({})",
-                                f.ty.params.iter().map(|t| t.name()).collect::<Vec<_>>().join(" "),
-                                f.ty.results.iter().map(|t| t.name()).collect::<Vec<_>>().join(" ")
-                            ))
+                            .map(|f| {
+                                format!(
+                                    "({}) -> ({})",
+                                    f.ty.params
+                                        .iter()
+                                        .map(|t| t.name())
+                                        .collect::<Vec<_>>()
+                                        .join(" "),
+                                    f.ty.results
+                                        .iter()
+                                        .map(|t| t.name())
+                                        .collect::<Vec<_>>()
+                                        .join(" ")
+                                )
+                            })
                             .unwrap_or_default();
                         ("func", sig)
                     }
@@ -294,10 +326,7 @@ pub fn state_json(studio: &Studio, memory_start: u32) -> Json {
         "breakpoints",
         Json::Arr(session.breakpoints.iter().map(breakpoint_json).collect()),
     ));
-    pairs.push((
-        "memory_first",
-        Json::Int(memory_start as i64),
-    ));
+    pairs.push(("memory_first", Json::Int(memory_start as i64)));
     Json::obj(pairs)
 }
 
@@ -338,7 +367,10 @@ pub fn spec_json(custom: Option<&str>) -> Json {
         ("total", Json::Int(total as i64)),
         ("passed", Json::Int(passed as i64)),
         ("failed", Json::Int((total - passed) as i64)),
-        ("reports", Json::Arr(reports.iter().map(report_json).collect())),
+        (
+            "reports",
+            Json::Arr(reports.iter().map(report_json).collect()),
+        ),
     ])
 }
 
@@ -372,19 +404,18 @@ pub fn trace_json(studio: &Studio) -> Json {
     ])
 }
 
-pub fn diff_json(
-    source: &str,
-    export: &str,
-    a: Vec<i32>,
-    b: Vec<i32>,
-) -> Json {
+pub fn diff_json(source: &str, export: &str, a: Vec<i32>, b: Vec<i32>) -> Json {
     use vela_core::runtime::Limits;
     let run = |args: Vec<i32>| -> Result<Session, String> {
         Session::from_wat(
             source,
             export,
             args.into_iter().map(Value::I32).collect(),
-            Limits { max_steps: 300_000, max_call_depth: 512, max_stack: 200_000 },
+            Limits {
+                max_steps: 300_000,
+                max_call_depth: 512,
+                max_stack: 200_000,
+            },
         )
         .map_err(|e| e.to_string())
     };
@@ -404,7 +435,10 @@ pub fn diff_json(
         ("diverged", Json::Bool(divergence.is_some())),
         (
             "step",
-            divergence.as_ref().map(|d| Json::Int(d.step as i64)).unwrap_or(Json::Null),
+            divergence
+                .as_ref()
+                .map(|d| Json::Int(d.step as i64))
+                .unwrap_or(Json::Null),
         ),
         (
             "reason",
@@ -471,7 +505,16 @@ mod tests {
         assert_eq!(state.get("export").unwrap().as_str(), Some("main"));
         assert!(state.get("disasm").unwrap().as_arr().unwrap().len() > 0);
         assert!(state.get("exports").unwrap().as_arr().unwrap().len() >= 3);
-        assert!(state.get("memory").unwrap().get("pages").unwrap().as_i64().unwrap() >= 1);
+        assert!(
+            state
+                .get("memory")
+                .unwrap()
+                .get("pages")
+                .unwrap()
+                .as_i64()
+                .unwrap()
+                >= 1
+        );
         assert_eq!(state.get("step").unwrap().as_i64(), Some(0));
         assert!(state.get("trace_hash").unwrap().as_str().unwrap().len() == 16);
 
@@ -483,7 +526,10 @@ mod tests {
 
         let trace = trace_json(&studio);
         let events = trace.get("events").unwrap().as_arr().unwrap();
-        assert_eq!(events.len() as i64, trace.get("steps").unwrap().as_i64().unwrap());
+        assert_eq!(
+            events.len() as i64,
+            trace.get("steps").unwrap().as_i64().unwrap()
+        );
     }
 
     #[test]
@@ -506,7 +552,9 @@ mod tests {
         assert_eq!(report.get("passed").unwrap().as_i64(), Some(41));
         assert_eq!(report.get("failed").unwrap().as_i64(), Some(0));
         assert_eq!(report.get("reports").unwrap().as_arr().unwrap().len(), 6);
-        let custom = spec_json(Some("(module)\n(assert_return (invoke \"x\") (i32.const 0))"));
+        let custom = spec_json(Some(
+            "(module)\n(assert_return (invoke \"x\") (i32.const 0))",
+        ));
         assert_eq!(custom.get("failed").unwrap().as_i64(), Some(1));
     }
 

@@ -11,7 +11,10 @@ fn seeded() -> Store {
     store.alloc_memory(MemoryInst::new(Limits::new(1, Some(2))));
     store.alloc_table(TableInst::new(ValType::FuncRef, Limits::new(2, Some(4))));
     store.alloc_global(GlobalInst::new(
-        GlobalType { val: ValType::I32, mutable: true },
+        GlobalType {
+            val: ValType::I32,
+            mutable: true,
+        },
         vela_core::runtime::Value::I32(5),
     ));
     store
@@ -40,7 +43,10 @@ fn globals_and_tables_change_the_hash() {
     let store = seeded();
     let h = store.state_hash();
     let mut a = store.clone();
-    a.global_mut(0).unwrap().set(vela_core::runtime::Value::I32(6)).unwrap();
+    a.global_mut(0)
+        .unwrap()
+        .set(vela_core::runtime::Value::I32(6))
+        .unwrap();
     assert_ne!(a.state_hash(), h);
 
     let mut b = store.clone();

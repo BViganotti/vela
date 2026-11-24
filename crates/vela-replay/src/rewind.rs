@@ -22,13 +22,19 @@ pub struct CheckpointLog {
 
 impl Default for CheckpointLog {
     fn default() -> Self {
-        CheckpointLog { interval: 64, points: Vec::new() }
+        CheckpointLog {
+            interval: 64,
+            points: Vec::new(),
+        }
     }
 }
 
 impl CheckpointLog {
     pub fn new(interval: u64) -> Self {
-        CheckpointLog { interval: interval.max(1), points: Vec::new() }
+        CheckpointLog {
+            interval: interval.max(1),
+            points: Vec::new(),
+        }
     }
 
     pub fn len(&self) -> usize {

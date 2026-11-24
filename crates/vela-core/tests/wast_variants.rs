@@ -109,7 +109,10 @@ fn script_parser_supports_binary_modules() {
     let commands = vela_core::spec::runner::parse_script(&literal).unwrap();
     assert_eq!(commands.len(), 1);
     match &commands[0].1 {
-        Command::Module { source: ModuleSource::Binary(b), .. } => assert_eq!(b, bytes),
+        Command::Module {
+            source: ModuleSource::Binary(b),
+            ..
+        } => assert_eq!(b, bytes),
         other => panic!("unexpected command {other:?}"),
     }
 }

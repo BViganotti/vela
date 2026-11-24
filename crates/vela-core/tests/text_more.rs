@@ -1,7 +1,7 @@
 //! Additional text parser/printer coverage: imports, segments, literals.
 
 use vela_core::instr::Instr;
-use vela_core::module::{ImportDesc, ElementMode, DataMode};
+use vela_core::module::{DataMode, ElementMode, ImportDesc};
 use vela_core::text::{module_to_wat, parse_wat};
 use vela_core::types::{Limits, ValType};
 use vela_core::validate::validate_module;
@@ -91,7 +91,10 @@ fn inline_table_element_shorthand() {
     validate_module(&m).unwrap();
     assert_eq!(m.tables.len(), 1);
     assert_eq!(m.tables[0].limits, Limits::new(1, Some(1)));
-    assert!(matches!(m.elems[0].mode, ElementMode::Active { table: 0, .. }));
+    assert!(matches!(
+        m.elems[0].mode,
+        ElementMode::Active { table: 0, .. }
+    ));
 }
 
 #[test]
@@ -155,5 +158,8 @@ fn rejects_unsupported_or_malformed_fields() {
     assert!(parse_wat("(module (table 1 i32))").is_err());
     assert!(validate_module(&parse_wat("(module (global i32))").unwrap()).is_err());
     assert!(parse_wat("(module (memory 1 2 shared))").is_err());
-    assert!(validate_module(&parse_wat("(module (func (result i32) (i32.add (i32.const 1))))").unwrap()).is_err());
+    assert!(validate_module(
+        &parse_wat("(module (func (result i32) (i32.add (i32.const 1))))").unwrap()
+    )
+    .is_err());
 }

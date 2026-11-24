@@ -49,12 +49,7 @@ impl Studio {
         self.load(self.source.clone(), self.export.clone(), self.args.clone())
     }
 
-    pub fn load(
-        &mut self,
-        source: String,
-        export: String,
-        args: Vec<Value>,
-    ) -> Result<(), String> {
+    pub fn load(&mut self, source: String, export: String, args: Vec<Value>) -> Result<(), String> {
         self.error = None;
         let module: Module = parse_wat(&source).map_err(|e| {
             let msg = format!("parse error: {e}");
@@ -82,19 +77,13 @@ impl Studio {
             self.error = Some(msg.clone());
             msg
         })?;
-        let session = Session::from_instance(
-            store,
-            instance,
-            &export,
-            args.clone(),
-            self.limits,
-            32,
-        )
-        .map_err(|e| {
-            let msg = session_error(&e);
-            self.error = Some(msg.clone());
-            msg
-        })?;
+        let session =
+            Session::from_instance(store, instance, &export, args.clone(), self.limits, 32)
+                .map_err(|e| {
+                    let msg = session_error(&e);
+                    self.error = Some(msg.clone());
+                    msg
+                })?;
         self.session = Some(session);
         self.source = source;
         self.export = export;
@@ -122,7 +111,9 @@ impl Studio {
             }
             "resume" => session.resume(),
             "step" => match session.step_forward() {
-                vela_core::runtime::StepResult::Running => RunStop::Breakpoint(Breakpoint::HostCall),
+                vela_core::runtime::StepResult::Running => {
+                    RunStop::Breakpoint(Breakpoint::HostCall)
+                }
                 vela_core::runtime::StepResult::Finished => RunStop::Finished,
                 vela_core::runtime::StepResult::Trapped(t) => RunStop::Trapped(t),
             },
@@ -158,13 +149,19 @@ impl Studio {
     }
 
     pub fn add_breakpoint(&mut self, kind: &str) -> Result<(), String> {
-        let session = self.session.as_mut().ok_or_else(|| "no session".to_string())?;
+        let session = self
+            .session
+            .as_mut()
+            .ok_or_else(|| "no session".to_string())?;
         let (func, offset) = session
             .current_instruction()
             .map(|(f, o, _)| (f, o))
             .unwrap_or((0, 0));
         let bp = match kind {
-            "instruction" => Breakpoint::Instruction { func_addr: func, offset },
+            "instruction" => Breakpoint::Instruction {
+                func_addr: func,
+                offset,
+            },
             "function" => Breakpoint::Function { func_addr: func },
             "host" => Breakpoint::HostCall,
             other => return Err(format!("unknown breakpoint kind {other:?}")),
@@ -174,7 +171,10 @@ impl Studio {
     }
 
     pub fn add_memory_breakpoint(&mut self, address: u32) -> Result<(), String> {
-        let session = self.session.as_mut().ok_or_else(|| "no session".to_string())?;
+        let session = self
+            .session
+            .as_mut()
+            .ok_or_else(|| "no session".to_string())?;
         session.add_breakpoint(Breakpoint::MemoryAddress(address));
         Ok(())
     }
@@ -202,7 +202,8 @@ impl Studio {
             return Some(frame.func_addr);
         }
         for inst in &s.store.instances {
-            if let Some(vela_core::runtime::ExternVal::Func(addr)) = inst.exports.get(&self.export) {
+            if let Some(vela_core::runtime::ExternVal::Func(addr)) = inst.exports.get(&self.export)
+            {
                 return Some(*addr);
             }
         }
@@ -243,7 +244,11 @@ mod tests {
     fn invalid_source_is_reported_without_dropping_the_session() {
         let mut s = Studio::new();
         let old_steps = s.session().unwrap().exec.steps;
-        let err = s.load("(module (func (result i32) i64.const 0))".into(), "main".into(), vec![]);
+        let err = s.load(
+            "(module (func (result i32) i64.const 0))".into(),
+            "main".into(),
+            vec![],
+        );
         assert!(err.is_err());
         assert!(s.error.is_some());
         assert_eq!(s.session().unwrap().exec.steps, old_steps);
@@ -254,7 +259,8 @@ mod tests {
         let mut s = Studio::new();
         let src = r#"(module (func (export "twice") (param i32) (result i32)
             local.get 0 i32.const 2 i32.mul))"#;
-        s.load(src.into(), "twice".into(), vec![Value::I32(21)]).unwrap();
+        s.load(src.into(), "twice".into(), vec![Value::I32(21)])
+            .unwrap();
         s.action("finish", None).unwrap();
         assert_eq!(s.session().unwrap().exec.results, vec![Value::I32(42)]);
         assert_eq!(s.export, "twice");
@@ -287,7 +293,8 @@ mod tests {
     fn restart_preserves_source_export_and_args() {
         let mut s = Studio::new();
         let src = r#"(module (func (export "id") (param i32) (result i32) local.get 0))"#;
-        s.load(src.into(), "id".into(), vec![Value::I32(9)]).unwrap();
+        s.load(src.into(), "id".into(), vec![Value::I32(9)])
+            .unwrap();
         s.action("finish", None).unwrap();
         s.action("restart", None).unwrap();
         assert_eq!(s.source, src);

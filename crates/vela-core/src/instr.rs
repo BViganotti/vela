@@ -37,10 +37,18 @@ pub enum LoadKind {
 impl LoadKind {
     pub fn result_type(self) -> ValType {
         match self {
-            LoadKind::I32 | LoadKind::I32x8S | LoadKind::I32x8U | LoadKind::I32x16S
+            LoadKind::I32
+            | LoadKind::I32x8S
+            | LoadKind::I32x8U
+            | LoadKind::I32x16S
             | LoadKind::I32x16U => ValType::I32,
-            LoadKind::I64 | LoadKind::I64x8S | LoadKind::I64x8U | LoadKind::I64x16S
-            | LoadKind::I64x16U | LoadKind::I64x32S | LoadKind::I64x32U => ValType::I64,
+            LoadKind::I64
+            | LoadKind::I64x8S
+            | LoadKind::I64x8U
+            | LoadKind::I64x16S
+            | LoadKind::I64x16U
+            | LoadKind::I64x32S
+            | LoadKind::I64x32U => ValType::I64,
             LoadKind::F32 => ValType::F32,
             LoadKind::F64 => ValType::F64,
         }
@@ -142,7 +150,10 @@ pub enum Instr {
     BrTable(Box<BrTable>),
     Return,
     Call(u32),
-    CallIndirect { type_idx: u32, table_idx: u32 },
+    CallIndirect {
+        type_idx: u32,
+        table_idx: u32,
+    },
     Drop,
     Select,
     SelectT(Vec<ValType>),
@@ -153,20 +164,40 @@ pub enum Instr {
     GlobalSet(u32),
     TableGet(u32),
     TableSet(u32),
-    TableInit { elem: u32, table: u32 },
+    TableInit {
+        elem: u32,
+        table: u32,
+    },
     ElemDrop(u32),
-    TableCopy { dst: u32, src: u32 },
+    TableCopy {
+        dst: u32,
+        src: u32,
+    },
     TableGrow(u32),
     TableSize(u32),
     TableFill(u32),
     MemorySize(u32),
     MemoryGrow(u32),
-    MemoryInit { data: u32, mem: u32 },
+    MemoryInit {
+        data: u32,
+        mem: u32,
+    },
     DataDrop(u32),
-    MemoryCopy { dst: u32, src: u32 },
+    MemoryCopy {
+        dst: u32,
+        src: u32,
+    },
     MemoryFill(u32),
-    Load { kind: LoadKind, mem: u32, arg: MemArg },
-    Store { kind: StoreKind, mem: u32, arg: MemArg },
+    Load {
+        kind: LoadKind,
+        mem: u32,
+        arg: MemArg,
+    },
+    Store {
+        kind: StoreKind,
+        mem: u32,
+        arg: MemArg,
+    },
     I32Const(i32),
     I64Const(i64),
     F32Const(u32),
@@ -528,9 +559,7 @@ impl Instr {
         Some(match self {
             I32Eqz | I32Clz | I32Ctz | I32Popcnt | I32Extend8S | I32Extend16S => (I32_, I32_),
             I64Eqz => (I64_, I32_),
-            I64Clz | I64Ctz | I64Popcnt | I64Extend8S | I64Extend16S | I64Extend32S => {
-                (I64_, I64_)
-            }
+            I64Clz | I64Ctz | I64Popcnt | I64Extend8S | I64Extend16S | I64Extend32S => (I64_, I64_),
             I32Eq | I32Ne | I32LtS | I32LtU | I32GtS | I32GtU | I32LeS | I32LeU | I32GeS
             | I32GeU | I32Add | I32Sub | I32Mul | I32DivS | I32DivU | I32RemS | I32RemU
             | I32And | I32Or | I32Xor | I32Shl | I32ShrS | I32ShrU | I32Rotl | I32Rotr => {
@@ -588,7 +617,10 @@ pub fn disassemble(instr: &Instr) -> String {
             s
         }
         Call(f) => format!("call {f}"),
-        CallIndirect { type_idx, table_idx } => format!("call_indirect (type {type_idx}) {table_idx}"),
+        CallIndirect {
+            type_idx,
+            table_idx,
+        } => format!("call_indirect (type {type_idx}) {table_idx}"),
         LocalGet(i) | LocalSet(i) | LocalTee(i) | GlobalGet(i) | GlobalSet(i) | TableGet(i)
         | TableSet(i) | ElemDrop(i) | TableGrow(i) | TableSize(i) | TableFill(i)
         | MemorySize(i) | MemoryGrow(i) | DataDrop(i) | MemoryFill(i) => {

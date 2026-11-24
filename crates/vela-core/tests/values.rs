@@ -29,9 +29,15 @@ fn trap_codes_are_stable_and_nonempty() {
         // Traps implement Error for ergonomic embedding.
         let _: &dyn std::error::Error = &t;
     }
-    assert_eq!(Trap::MemoryOutOfBounds.to_string(), "out of bounds memory access");
+    assert_eq!(
+        Trap::MemoryOutOfBounds.to_string(),
+        "out of bounds memory access"
+    );
     assert_eq!(Trap::Host("x".into()).to_string(), "host error: x");
-    assert_eq!(Trap::LimitExceeded("fuel").to_string(), "resource limit exceeded: fuel");
+    assert_eq!(
+        Trap::LimitExceeded("fuel").to_string(),
+        "resource limit exceeded: fuel"
+    );
 }
 
 #[test]

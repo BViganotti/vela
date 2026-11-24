@@ -11,7 +11,9 @@ use vela_studio::{run_server, Studio};
 fn main() {
     let token = random_token();
     let studio = Studio::new();
-    let open = std::env::var("VELA_NO_OPEN").map(|v| v != "1").unwrap_or(true);
+    let open = std::env::var("VELA_NO_OPEN")
+        .map(|v| v != "1")
+        .unwrap_or(true);
     if let Err(e) = run_server(studio, token, open) {
         eprintln!("vela-studio: {e}");
         std::process::exit(1);

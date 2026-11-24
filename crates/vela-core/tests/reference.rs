@@ -50,7 +50,10 @@ const REFS: &str = r#"
 
 #[test]
 fn funcref_globals_and_indirect_calls() {
-    assert_eq!(run(REFS, "set_and_call", vec![]).unwrap(), vec![Value::I32(42)]);
+    assert_eq!(
+        run(REFS, "set_and_call", vec![]).unwrap(),
+        vec![Value::I32(42)]
+    );
     assert_eq!(run(REFS, "nulls", vec![]).unwrap(), vec![Value::I32(2)]);
 }
 
@@ -113,7 +116,10 @@ fn loop_parameters_and_results() {
           br 0
         end))
     "#;
-    assert_eq!(run(wat, "count", vec![Value::I32(0)]).unwrap(), vec![Value::I32(3)]);
+    assert_eq!(
+        run(wat, "count", vec![Value::I32(0)]).unwrap(),
+        vec![Value::I32(3)]
+    );
 }
 
 #[test]

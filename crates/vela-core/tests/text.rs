@@ -1,9 +1,7 @@
 //! Text parser tests: modules, folded expressions, segments and errors.
 
 use vela_core::binary::{decode_module, encode_module};
-use vela_core::runtime::{
-    instantiate, invoke, Limits, Registry, Store, Trap, Value,
-};
+use vela_core::runtime::{instantiate, invoke, Limits, Registry, Store, Trap, Value};
 use vela_core::text::parse_wat;
 use vela_core::validate::validate_module;
 
@@ -17,8 +15,7 @@ fn run(src: &str, name: &str, args: Vec<Value>) -> Result<Vec<Value>, Trap> {
     let m = parse_valid(src);
     let mut store = Store::new();
     let inst = instantiate(&mut store, m, &Registry::new()).expect("instantiate");
-    let addr = store
-        .instances[inst as usize]
+    let addr = store.instances[inst as usize]
         .exports
         .get(name)
         .and_then(|e| match e {
@@ -52,7 +49,10 @@ fn folded_expressions() {
           (func (export "f") (param $x i32) (result i32)
             (i32.add (i32.mul (local.get $x) (i32.const 2)) (i32.const 1))))
     "#;
-    assert_eq!(run(src, "f", vec![Value::I32(20)]).unwrap(), vec![Value::I32(41)]);
+    assert_eq!(
+        run(src, "f", vec![Value::I32(20)]).unwrap(),
+        vec![Value::I32(41)]
+    );
 }
 
 #[test]
@@ -81,7 +81,10 @@ fn labels_and_loops() {
             end
             local.get $acc))
     "#;
-    assert_eq!(run(src, "fact", vec![Value::I32(6)]).unwrap(), vec![Value::I32(720)]);
+    assert_eq!(
+        run(src, "fact", vec![Value::I32(6)]).unwrap(),
+        vec![Value::I32(720)]
+    );
 }
 
 #[test]
@@ -94,8 +97,14 @@ fn folded_if_then_else() {
               (then (i32.sub (i32.const 0) (local.get $x)))
               (else (local.get $x)))))
     "#;
-    assert_eq!(run(src, "abs", vec![Value::I32(-9)]).unwrap(), vec![Value::I32(9)]);
-    assert_eq!(run(src, "abs", vec![Value::I32(9)]).unwrap(), vec![Value::I32(9)]);
+    assert_eq!(
+        run(src, "abs", vec![Value::I32(-9)]).unwrap(),
+        vec![Value::I32(9)]
+    );
+    assert_eq!(
+        run(src, "abs", vec![Value::I32(9)]).unwrap(),
+        vec![Value::I32(9)]
+    );
 }
 
 #[test]
@@ -123,9 +132,15 @@ fn memory_table_globals_and_data() {
             local.get $i
             call_indirect (type $un)))
     "#;
-    assert_eq!(run(src, "load", vec![]).unwrap(), vec![Value::I32(0x04030201)]);
+    assert_eq!(
+        run(src, "load", vec![]).unwrap(),
+        vec![Value::I32(0x04030201)]
+    );
     assert_eq!(run(src, "grow", vec![]).unwrap(), vec![Value::I32(8)]);
-    assert_eq!(run(src, "pick", vec![Value::I32(1)]).unwrap(), vec![Value::I32(2)]);
+    assert_eq!(
+        run(src, "pick", vec![Value::I32(1)]).unwrap(),
+        vec![Value::I32(2)]
+    );
 }
 
 #[test]
@@ -146,12 +161,12 @@ fn imports_and_exports_by_name() {
             params: vec![vela_core::types::ValType::I32],
             results: vec![vela_core::types::ValType::I32],
         },
-        std::rc::Rc::new(|_: &mut vela_core::runtime::HostEnv, args: &[Value]| {
-            match args[0] {
+        std::rc::Rc::new(
+            |_: &mut vela_core::runtime::HostEnv, args: &[Value]| match args[0] {
                 Value::I32(v) => Ok(vec![Value::I32(v * 2)]),
                 _ => Err(Trap::TypeMismatch("host arg")),
-            }
-        }),
+            },
+        ),
     );
     reg.install_hosts(&mut store);
     let inst = instantiate(&mut store, m, &reg).unwrap();
@@ -215,7 +230,10 @@ fn passive_data_and_memory_init() {
             i32.const 0
             i32.load8_u))
     "#;
-    assert_eq!(run(src, "init", vec![]).unwrap(), vec![Value::I32(b'h' as i32)]);
+    assert_eq!(
+        run(src, "init", vec![]).unwrap(),
+        vec![Value::I32(b'h' as i32)]
+    );
 }
 
 #[test]
@@ -226,7 +244,10 @@ fn rejects_bad_text() {
     assert!(parse_wat("(module (func block end end))").is_err());
     assert!(parse_wat("(module (memory 2 1))").is_err());
     assert!(parse_wat("(module (import \"a\" \"b\" (func 0)))").is_err());
-    assert!(validate_module(&parse_wat("(module (func (result i32) i32.const 1 i32.const 2))").unwrap()).is_err());
+    assert!(validate_module(
+        &parse_wat("(module (func (result i32) i32.const 1 i32.const 2))").unwrap()
+    )
+    .is_err());
 }
 
 #[test]

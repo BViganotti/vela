@@ -46,14 +46,20 @@ pub struct HostFunc {
 
 impl fmt::Debug for HostFunc {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("HostFunc").field("name", &self.name).field("ty", &self.ty).finish()
+        f.debug_struct("HostFunc")
+            .field("name", &self.name)
+            .field("ty", &self.ty)
+            .finish()
     }
 }
 
 #[derive(Clone, Debug)]
 pub enum FuncKind {
     /// A WebAssembly function: instance index and module-level function index.
-    Wasm { instance: u32, func: u32 },
+    Wasm {
+        instance: u32,
+        func: u32,
+    },
     Host(HostFunc),
 }
 
@@ -101,7 +107,11 @@ pub struct HostEnv {
 
 impl Default for HostEnv {
     fn default() -> Self {
-        HostEnv { clock_ms: 0, random_state: 0x9e3779b97f4a7c15, calls: 0 }
+        HostEnv {
+            clock_ms: 0,
+            random_state: 0x9e3779b97f4a7c15,
+            calls: 0,
+        }
     }
 }
 
@@ -217,36 +227,54 @@ impl Store {
     }
 
     pub fn memory(&self, addr: u32) -> Result<&MemoryInst, Trap> {
-        self.memories.get(addr as usize).ok_or(Trap::LimitExceeded("memory address"))
+        self.memories
+            .get(addr as usize)
+            .ok_or(Trap::LimitExceeded("memory address"))
     }
 
     pub fn memory_mut(&mut self, addr: u32) -> Result<&mut MemoryInst, Trap> {
-        self.memories.get_mut(addr as usize).ok_or(Trap::LimitExceeded("memory address"))
+        self.memories
+            .get_mut(addr as usize)
+            .ok_or(Trap::LimitExceeded("memory address"))
     }
 
     pub fn table(&self, addr: u32) -> Result<&TableInst, Trap> {
-        self.tables.get(addr as usize).ok_or(Trap::LimitExceeded("table address"))
+        self.tables
+            .get(addr as usize)
+            .ok_or(Trap::LimitExceeded("table address"))
     }
 
     pub fn table_mut(&mut self, addr: u32) -> Result<&mut TableInst, Trap> {
-        self.tables.get_mut(addr as usize).ok_or(Trap::LimitExceeded("table address"))
+        self.tables
+            .get_mut(addr as usize)
+            .ok_or(Trap::LimitExceeded("table address"))
     }
 
     pub fn global(&self, addr: u32) -> Result<&GlobalInst, Trap> {
-        self.globals.get(addr as usize).ok_or(Trap::LimitExceeded("global address"))
+        self.globals
+            .get(addr as usize)
+            .ok_or(Trap::LimitExceeded("global address"))
     }
 
     pub fn global_mut(&mut self, addr: u32) -> Result<&mut GlobalInst, Trap> {
-        self.globals.get_mut(addr as usize).ok_or(Trap::LimitExceeded("global address"))
+        self.globals
+            .get_mut(addr as usize)
+            .ok_or(Trap::LimitExceeded("global address"))
     }
 
     pub fn instance(&self, addr: u32) -> Result<&Instance, Trap> {
-        self.instances.get(addr as usize).ok_or(Trap::LimitExceeded("instance address"))
+        self.instances
+            .get(addr as usize)
+            .ok_or(Trap::LimitExceeded("instance address"))
     }
 
     /// Resolve an export by name from an instance.
     pub fn export(&self, instance: u32, name: &str) -> Option<ExternVal> {
-        self.instances.get(instance as usize)?.exports.get(name).copied()
+        self.instances
+            .get(instance as usize)?
+            .exports
+            .get(name)
+            .copied()
     }
 
     /// Hash mutable state: memories, tables, globals and host environment.
@@ -311,7 +339,8 @@ impl Registry {
     }
 
     pub fn insert(&mut self, module: &str, name: &str, value: ExternVal) {
-        self.entries.insert((module.to_string(), name.to_string()), value);
+        self.entries
+            .insert((module.to_string(), name.to_string()), value);
     }
 
     /// Register all exports of an instance under a module name.
@@ -321,14 +350,9 @@ impl Registry {
         }
     }
 
-    pub fn define_host(
-        &mut self,
-        module: &str,
-        name: &str,
-        ty: FuncType,
-        f: Rc<HostFn>,
-    ) {
-        self.extra_funcs.push((module.to_string(), name.to_string(), ty, f));
+    pub fn define_host(&mut self, module: &str, name: &str, ty: FuncType, f: Rc<HostFn>) {
+        self.extra_funcs
+            .push((module.to_string(), name.to_string(), ty, f));
     }
 
     /// Materialize host functions registered with `define_host` into a store.
@@ -337,7 +361,11 @@ impl Registry {
         for (module, name, ty, f) in extra {
             let addr = store.alloc_func(FuncInst {
                 ty: ty.clone(),
-                kind: FuncKind::Host(HostFunc { ty, name: name.clone(), func: f }),
+                kind: FuncKind::Host(HostFunc {
+                    ty,
+                    name: name.clone(),
+                    func: f,
+                }),
             });
             self.insert(&module, &name, ExternVal::Func(addr));
         }
@@ -346,7 +374,9 @@ impl Registry {
 
 impl ImportResolver for Registry {
     fn resolve(&self, module: &str, name: &str) -> Option<ExternVal> {
-        self.entries.get(&(module.to_string(), name.to_string())).copied()
+        self.entries
+            .get(&(module.to_string(), name.to_string()))
+            .copied()
     }
 }
 
@@ -357,10 +387,14 @@ pub struct StaticResolver {
 
 impl StaticResolver {
     pub fn new() -> Self {
-        StaticResolver { entries: RefCell::new(Vec::new()) }
+        StaticResolver {
+            entries: RefCell::new(Vec::new()),
+        }
     }
     pub fn add(&self, module: &str, name: &str, v: ExternVal) {
-        self.entries.borrow_mut().push((module.to_string(), name.to_string(), v));
+        self.entries
+            .borrow_mut()
+            .push((module.to_string(), name.to_string(), v));
     }
 }
 

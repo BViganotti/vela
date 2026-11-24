@@ -57,7 +57,9 @@ pub fn parse_module(src: &str) -> TextResult<Module> {
     if items.len() != 1 {
         return Err(TextError::new(1, 1, "expected exactly one module"));
     }
-    let module = items[0].list().ok_or_else(|| items[0].err("expected a module"))?;
+    let module = items[0]
+        .list()
+        .ok_or_else(|| items[0].err("expected a module"))?;
     if module.first().and_then(|s| s.atom()) != Some("module") {
         return Err(items[0].err("expected (module ...)"));
     }
@@ -180,14 +182,14 @@ fn parse_f64_str(a: &str) -> Option<f64> {
         return Some(f64::from_bits(0xfff8_0000_0000_0000));
     }
     if let Some(bits) = a.strip_prefix("nan:0x") {
-        return u64::from_str_radix(bits, 16)
-            .ok()
-            .map(|payload| f64::from_bits(0x7ff0_0000_0000_0000 | (payload & 0x000f_ffff_ffff_ffff)));
+        return u64::from_str_radix(bits, 16).ok().map(|payload| {
+            f64::from_bits(0x7ff0_0000_0000_0000 | (payload & 0x000f_ffff_ffff_ffff))
+        });
     }
     if let Some(bits) = a.strip_prefix("-nan:0x") {
-        return u64::from_str_radix(bits, 16)
-            .ok()
-            .map(|payload| f64::from_bits(0xfff0_0000_0000_0000 | (payload & 0x000f_ffff_ffff_ffff)));
+        return u64::from_str_radix(bits, 16).ok().map(|payload| {
+            f64::from_bits(0xfff0_0000_0000_0000 | (payload & 0x000f_ffff_ffff_ffff))
+        });
     }
     if a == "inf" || a == "+inf" {
         return Some(f64::INFINITY);
@@ -286,9 +288,7 @@ impl WatParser {
                 }
                 "data" => self.parse_data_field(field)?,
                 "elem" => self.parse_elem_field(field)?,
-                other => {
-                    return Err(field.err(format!("unsupported module field {other:?}")))
-                }
+                other => return Err(field.err(format!("unsupported module field {other:?}"))),
             }
         }
         if !self.module.datas.is_empty() {
@@ -314,7 +314,9 @@ impl WatParser {
                     i += 1;
                 }
             }
-            let fty = list.get(i).ok_or_else(|| field.err("type is missing a function type"))?;
+            let fty = list
+                .get(i)
+                .ok_or_else(|| field.err("type is missing a function type"))?;
             let ft_list = fty.list().ok_or_else(|| fty.err("expected (func ...)"))?;
             if ft_list.first().and_then(|s| s.atom()) != Some("func") {
                 return Err(fty.err("only function types are supported"));
@@ -342,7 +344,12 @@ impl WatParser {
                 Some("param") => {
                     let list = items[i].list().unwrap();
                     let mut j = 1;
-                    if list.get(j).and_then(|s| s.atom()).map(|a| a.starts_with('$')).unwrap_or(false) {
+                    if list
+                        .get(j)
+                        .and_then(|s| s.atom())
+                        .map(|a| a.starts_with('$'))
+                        .unwrap_or(false)
+                    {
                         j += 1;
                     }
                     while j < list.len() {
@@ -604,7 +611,12 @@ impl WatParser {
             .and_then(|s| s.atom())
             .ok_or_else(|| list[3].err("malformed import descriptor"))?;
         let mut i = 1;
-        if desc.get(i).and_then(|s| s.atom()).map(|a| a.starts_with('$')).unwrap_or(false) {
+        if desc
+            .get(i)
+            .and_then(|s| s.atom())
+            .map(|a| a.starts_with('$'))
+            .unwrap_or(false)
+        {
             i += 1;
         }
         let desc = match kind {
@@ -621,7 +633,9 @@ impl WatParser {
                 ImportDesc::Memory(MemoryType { limits })
             }
             "global" => {
-                let g = desc.get(i).ok_or_else(|| list[3].err("missing global type"))?;
+                let g = desc
+                    .get(i)
+                    .ok_or_else(|| list[3].err("missing global type"))?;
                 let ty = parse_global_type(g)?;
                 ImportDesc::Global(ty)
             }
@@ -638,17 +652,27 @@ impl WatParser {
         let mut results: Vec<ValType> = Vec::new();
         let mut i = 0;
         while i < items.len() {
-            let head = items[i].list().and_then(|l| l.first()).and_then(|s| s.atom());
+            let head = items[i]
+                .list()
+                .and_then(|l| l.first())
+                .and_then(|s| s.atom());
             match head {
                 Some("type") => {
                     let list = items[i].list().unwrap();
-                    let idx = list.get(1).ok_or_else(|| items[i].err("missing type index"))?;
+                    let idx = list
+                        .get(1)
+                        .ok_or_else(|| items[i].err("missing type index"))?;
                     explicit = Some(self.resolve_type(idx)?);
                 }
                 Some("param") => {
                     let list = items[i].list().unwrap();
                     let mut j = 1;
-                    if list.get(j).and_then(|s| s.atom()).map(|a| a.starts_with('$')).unwrap_or(false) {
+                    if list
+                        .get(j)
+                        .and_then(|s| s.atom())
+                        .map(|a| a.starts_with('$'))
+                        .unwrap_or(false)
+                    {
                         j += 1;
                     }
                     while j < list.len() {
@@ -678,7 +702,12 @@ impl WatParser {
     fn parse_func_field(&mut self, field: &Sexpr) -> TextResult<()> {
         let list = field.list().unwrap();
         let mut i = 1;
-        if list.get(i).and_then(|s| s.atom()).map(|a| a.starts_with('$')).unwrap_or(false) {
+        if list
+            .get(i)
+            .and_then(|s| s.atom())
+            .map(|a| a.starts_with('$'))
+            .unwrap_or(false)
+        {
             i += 1;
         }
         let mut exports = Vec::new();
@@ -691,7 +720,10 @@ impl WatParser {
         let mut results_given = false;
 
         while i < list.len() {
-            let head = list[i].list().and_then(|l| l.first()).and_then(|s| s.atom());
+            let head = list[i]
+                .list()
+                .and_then(|l| l.first())
+                .and_then(|s| s.atom());
             match head {
                 Some("export") => {
                     let inner = list[i].list().unwrap();
@@ -800,7 +832,10 @@ impl WatParser {
                 }
                 t
             }
-            None => self.dedupe_type(FuncType { params: params.clone(), results: results.clone() }),
+            None => self.dedupe_type(FuncType {
+                params: params.clone(),
+                results: results.clone(),
+            }),
         };
 
         if let Some((m, n)) = import {
@@ -811,9 +846,16 @@ impl WatParser {
                 return Err(field.err("imported function cannot declare locals"));
             }
             let idx = self.module.imported_funcs() as u32;
-            self.module.imports.push(Import { module: m, name: n, desc: ImportDesc::Func(ft) });
+            self.module.imports.push(Import {
+                module: m,
+                name: n,
+                desc: ImportDesc::Func(ft),
+            });
             for name in exports {
-                self.module.exports.push(Export { name, desc: ExportDesc::Func(idx) });
+                self.module.exports.push(Export {
+                    name,
+                    desc: ExportDesc::Func(idx),
+                });
             }
             return Ok(());
         }
@@ -859,10 +901,16 @@ impl WatParser {
         self.module.types.extend(ctx.extra_types);
         self.module.funcs.push(Func {
             type_idx: ft,
-            body: FuncBody { locals: local_types, body },
+            body: FuncBody {
+                locals: local_types,
+                body,
+            },
         });
         for name in exports {
-            self.module.exports.push(Export { name, desc: ExportDesc::Func(current) });
+            self.module.exports.push(Export {
+                name,
+                desc: ExportDesc::Func(current),
+            });
         }
         Ok(())
     }
@@ -870,7 +918,12 @@ impl WatParser {
     fn parse_table_field(&mut self, field: &Sexpr) -> TextResult<()> {
         let list = field.list().unwrap();
         let mut i = 1;
-        if list.get(i).and_then(|s| s.atom()).map(|a| a.starts_with('$')).unwrap_or(false) {
+        if list
+            .get(i)
+            .and_then(|s| s.atom())
+            .map(|a| a.starts_with('$'))
+            .unwrap_or(false)
+        {
             i += 1;
         }
         let mut exports = Vec::new();
@@ -879,7 +932,11 @@ impl WatParser {
         let mut elem_type = ValType::FuncRef;
         let mut inline_elem: Option<Vec<Vec<Instr>>> = None;
         while i < list.len() {
-            match list[i].list().and_then(|l| l.first()).and_then(|s| s.atom()) {
+            match list[i]
+                .list()
+                .and_then(|l| l.first())
+                .and_then(|s| s.atom())
+            {
                 Some("export") => {
                     let inner = list[i].list().unwrap();
                     let name = inner
@@ -952,25 +1009,41 @@ impl WatParser {
             }
         }
         let limits = limits.ok_or_else(|| field.err("table is missing limits"))?;
-        let tt = TableType { elem: elem_type, limits };
+        let tt = TableType {
+            elem: elem_type,
+            limits,
+        };
         if let Some((m, n)) = import {
             let current = self.imported_tables();
-            self.module.imports.push(Import { module: m, name: n, desc: ImportDesc::Table(tt) });
+            self.module.imports.push(Import {
+                module: m,
+                name: n,
+                desc: ImportDesc::Table(tt),
+            });
             for name in exports {
-                self.module.exports.push(Export { name, desc: ExportDesc::Table(current) });
+                self.module.exports.push(Export {
+                    name,
+                    desc: ExportDesc::Table(current),
+                });
             }
         } else {
             let current = self.module.tables.len() as u32 + self.imported_tables();
             self.module.tables.push(tt);
             if let Some(items) = inline_elem {
                 self.module.elems.push(Element {
-                    mode: ElementMode::Active { table: current, offset: vec![Instr::I32Const(0), Instr::End] },
+                    mode: ElementMode::Active {
+                        table: current,
+                        offset: vec![Instr::I32Const(0), Instr::End],
+                    },
                     elem_type,
                     init: items,
                 });
             }
             for name in exports {
-                self.module.exports.push(Export { name, desc: ExportDesc::Table(current) });
+                self.module.exports.push(Export {
+                    name,
+                    desc: ExportDesc::Table(current),
+                });
             }
         }
         Ok(())
@@ -1038,13 +1111,22 @@ impl WatParser {
     fn parse_memory_field(&mut self, field: &Sexpr) -> TextResult<()> {
         let list = field.list().unwrap();
         let mut i = 1;
-        if list.get(i).and_then(|s| s.atom()).map(|a| a.starts_with('$')).unwrap_or(false) {
+        if list
+            .get(i)
+            .and_then(|s| s.atom())
+            .map(|a| a.starts_with('$'))
+            .unwrap_or(false)
+        {
             i += 1;
         }
         let mut exports = Vec::new();
         let mut import = None;
         while i < list.len() {
-            match list[i].list().and_then(|l| l.first()).and_then(|s| s.atom()) {
+            match list[i]
+                .list()
+                .and_then(|l| l.first())
+                .and_then(|s| s.atom())
+            {
                 Some("export") => {
                     let inner = list[i].list().unwrap();
                     let name = inner
@@ -1077,15 +1159,25 @@ impl WatParser {
         let mt = MemoryType { limits };
         if let Some((m, n)) = import {
             let current = self.imported_memories();
-            self.module.imports.push(Import { module: m, name: n, desc: ImportDesc::Memory(mt) });
+            self.module.imports.push(Import {
+                module: m,
+                name: n,
+                desc: ImportDesc::Memory(mt),
+            });
             for name in exports {
-                self.module.exports.push(Export { name, desc: ExportDesc::Memory(current) });
+                self.module.exports.push(Export {
+                    name,
+                    desc: ExportDesc::Memory(current),
+                });
             }
         } else {
             let current = self.module.memories.len() as u32 + self.imported_memories();
             self.module.memories.push(mt);
             for name in exports {
-                self.module.exports.push(Export { name, desc: ExportDesc::Memory(current) });
+                self.module.exports.push(Export {
+                    name,
+                    desc: ExportDesc::Memory(current),
+                });
             }
         }
         Ok(())
@@ -1094,13 +1186,22 @@ impl WatParser {
     fn parse_global_field(&mut self, field: &Sexpr) -> TextResult<()> {
         let list = field.list().unwrap();
         let mut i = 1;
-        if list.get(i).and_then(|s| s.atom()).map(|a| a.starts_with('$')).unwrap_or(false) {
+        if list
+            .get(i)
+            .and_then(|s| s.atom())
+            .map(|a| a.starts_with('$'))
+            .unwrap_or(false)
+        {
             i += 1;
         }
         let mut exports = Vec::new();
         let mut import = None;
         while i < list.len() {
-            match list[i].list().and_then(|l| l.first()).and_then(|s| s.atom()) {
+            match list[i]
+                .list()
+                .and_then(|l| l.first())
+                .and_then(|s| s.atom())
+            {
                 Some("export") => {
                     let inner = list[i].list().unwrap();
                     let name = inner
@@ -1130,14 +1231,22 @@ impl WatParser {
             }
         }
         let ty = parse_global_type(
-            list.get(i).ok_or_else(|| field.err("global is missing a type"))?,
+            list.get(i)
+                .ok_or_else(|| field.err("global is missing a type"))?,
         )?;
         i += 1;
         if let Some((m, n)) = import {
             let current = self.imported_globals();
-            self.module.imports.push(Import { module: m, name: n, desc: ImportDesc::Global(ty) });
+            self.module.imports.push(Import {
+                module: m,
+                name: n,
+                desc: ImportDesc::Global(ty),
+            });
             for name in exports {
-                self.module.exports.push(Export { name, desc: ExportDesc::Global(current) });
+                self.module.exports.push(Export {
+                    name,
+                    desc: ExportDesc::Global(current),
+                });
             }
             return Ok(());
         }
@@ -1145,7 +1254,10 @@ impl WatParser {
         let current = self.module.globals.len() as u32 + self.imported_globals();
         self.module.globals.push(Global { ty, init });
         for name in exports {
-            self.module.exports.push(Export { name, desc: ExportDesc::Global(current) });
+            self.module.exports.push(Export {
+                name,
+                desc: ExportDesc::Global(current),
+            });
         }
         Ok(())
     }
@@ -1182,12 +1294,16 @@ impl WatParser {
             .bytes()
             .map(|b| String::from_utf8_lossy(b).into_owned())
             .ok_or_else(|| list[1].err("export needs a name string"))?;
-        let desc = list[2].list().ok_or_else(|| list[2].err("malformed export descriptor"))?;
+        let desc = list[2]
+            .list()
+            .ok_or_else(|| list[2].err("malformed export descriptor"))?;
         let kind = desc
             .first()
             .and_then(|s| s.atom())
             .ok_or_else(|| list[2].err("malformed export descriptor"))?;
-        let idx = desc.get(1).ok_or_else(|| list[2].err("missing export index"))?;
+        let idx = desc
+            .get(1)
+            .ok_or_else(|| list[2].err("missing export index"))?;
         let desc = match kind {
             "func" => ExportDesc::Func(self.resolve_func(idx)?),
             "table" => ExportDesc::Table(self.resolve_table(idx)?),
@@ -1293,7 +1409,11 @@ impl WatParser {
                 None => ElementMode::Passive,
             }
         };
-        self.module.elems.push(Element { mode, elem_type, init: items });
+        self.module.elems.push(Element {
+            mode,
+            elem_type,
+            init: items,
+        });
         Ok(())
     }
 }
@@ -1320,21 +1440,17 @@ fn parse_limits(items: &[Sexpr], hard_max: u32) -> TextResult<Limits> {
         nums.push(v);
     }
     if nums.is_empty() || nums.len() > 2 {
-        return Err(
-            items
-                .first()
-                .map(|s| s.err("malformed limits"))
-                .unwrap_or_else(|| TextError::new(1, 1, "malformed limits")),
-        );
+        return Err(items
+            .first()
+            .map(|s| s.err("malformed limits"))
+            .unwrap_or_else(|| TextError::new(1, 1, "malformed limits")));
     }
     let limits = Limits::new(nums[0], nums.get(1).copied());
     if !limits.is_valid(hard_max) {
-        return Err(
-            items
-                .first()
-                .map(|s| s.err("limits out of range"))
-                .unwrap_or_else(|| TextError::new(1, 1, "limits out of range")),
-        );
+        return Err(items
+            .first()
+            .map(|s| s.err("limits out of range"))
+            .unwrap_or_else(|| TextError::new(1, 1, "limits out of range")));
     }
     Ok(limits)
 }
@@ -1355,21 +1471,17 @@ fn parse_table_limits(items: &[Sexpr]) -> TextResult<(Limits, ValType)> {
         }
     }
     if nums.is_empty() || nums.len() > 2 {
-        return Err(
-            items
-                .first()
-                .map(|s| s.err("malformed table limits"))
-                .unwrap_or_else(|| TextError::new(1, 1, "malformed table limits")),
-        );
+        return Err(items
+            .first()
+            .map(|s| s.err("malformed table limits"))
+            .unwrap_or_else(|| TextError::new(1, 1, "malformed table limits")));
     }
     let limits = Limits::new(nums[0], nums.get(1).copied());
     if !limits.is_valid(crate::types::MAX_TABLE_ENTRIES) {
-        return Err(
-            items
-                .first()
-                .map(|s| s.err("table limits out of range"))
-                .unwrap_or_else(|| TextError::new(1, 1, "table limits out of range")),
-        );
+        return Err(items
+            .first()
+            .map(|s| s.err("table limits out of range"))
+            .unwrap_or_else(|| TextError::new(1, 1, "table limits out of range")));
     }
     Ok((limits, elem))
 }
@@ -1378,11 +1490,17 @@ fn parse_global_type(s: &Sexpr) -> TextResult<GlobalType> {
     if let Some(inner) = s.list() {
         if inner.first().and_then(|x| x.atom()) == Some("mut") {
             let ty = parse_valtype(inner.get(1).ok_or_else(|| s.err("mut needs a type"))?)?;
-            return Ok(GlobalType { val: ty, mutable: true });
+            return Ok(GlobalType {
+                val: ty,
+                mutable: true,
+            });
         }
         return Err(s.err("malformed global type"));
     }
-    Ok(GlobalType { val: parse_valtype(s)?, mutable: false })
+    Ok(GlobalType {
+        val: parse_valtype(s)?,
+        mutable: false,
+    })
 }
 
 // --- Instructions -----------------------------------------------------------
@@ -1576,7 +1694,9 @@ impl InstrCtx {
                 let then_list = list
                     .get(pos)
                     .ok_or_else(|| s.err("if is missing (then ...)"))?;
-                let then_inner = then_list.list().ok_or_else(|| then_list.err("malformed then"))?;
+                let then_inner = then_list
+                    .list()
+                    .ok_or_else(|| then_list.err("malformed then"))?;
                 pos += 1;
                 self.labels.push(label);
                 let mut out = cond;
@@ -1723,9 +1843,7 @@ impl InstrCtx {
             return Ok(instr);
         }
         Ok(match name {
-            "block" | "loop" | "if" => {
-                return Err(at.err("control instruction cannot appear here"))
-            }
+            "block" | "loop" | "if" => return Err(at.err("control instruction cannot appear here")),
             "br" => {
                 let s = take(pos)?;
                 Instr::Br(self.label_index(&s)?)
@@ -1768,7 +1886,10 @@ impl InstrCtx {
                             let idx = inner.get(1).ok_or_else(|| at.err("missing type"))?;
                             let a = idx.atom().ok_or_else(|| idx.err("expected type"))?;
                             ty = Some(if a.starts_with('$') {
-                                *self.type_names.get(a).ok_or_else(|| idx.err("unknown type"))?
+                                *self
+                                    .type_names
+                                    .get(a)
+                                    .ok_or_else(|| idx.err("unknown type"))?
                             } else {
                                 parse_u32_str(a).ok_or_else(|| idx.err("invalid type"))?
                             });
@@ -1802,7 +1923,10 @@ impl InstrCtx {
                         }
                     }
                 }
-                Instr::CallIndirect { type_idx: ty.unwrap_or(0), table_idx: table }
+                Instr::CallIndirect {
+                    type_idx: ty.unwrap_or(0),
+                    table_idx: table,
+                }
             }
             "local.get" | "local.set" | "local.tee" => {
                 let s = take(pos)?;
@@ -1825,7 +1949,10 @@ impl InstrCtx {
             "table.get" | "table.set" | "table.size" | "table.grow" | "table.fill" => {
                 let mut idx = 0u32;
                 if let Some(s) = toks.get(*pos) {
-                    if s.atom().map(|a| a.starts_with('$') || parse_u32_str(a).is_some()).unwrap_or(false) {
+                    if s.atom()
+                        .map(|a| a.starts_with('$') || parse_u32_str(a).is_some())
+                        .unwrap_or(false)
+                    {
                         idx = self.table_index(s)?;
                         *pos += 1;
                     }
@@ -1855,7 +1982,10 @@ impl InstrCtx {
                     s
                 };
                 let (table, elem) = if let Some(s) = toks.get(*pos) {
-                    if s.atom().map(|a| a.starts_with('$') || parse_u32_str(a).is_some()).unwrap_or(false) {
+                    if s.atom()
+                        .map(|a| a.starts_with('$') || parse_u32_str(a).is_some())
+                        .unwrap_or(false)
+                    {
                         let second = take(pos)?;
                         (self.table_index(&first)?, parse_u32(&second)?)
                     } else {
@@ -1873,7 +2003,10 @@ impl InstrCtx {
             "memory.size" | "memory.grow" => {
                 let mut idx = 0u32;
                 if let Some(s) = toks.get(*pos) {
-                    if s.atom().map(|a| a.starts_with('$') || parse_u32_str(a).is_some()).unwrap_or(false) {
+                    if s.atom()
+                        .map(|a| a.starts_with('$') || parse_u32_str(a).is_some())
+                        .unwrap_or(false)
+                    {
                         idx = self.memory_index(s)?;
                         *pos += 1;
                     }
@@ -1889,7 +2022,10 @@ impl InstrCtx {
                 let data = parse_u32(&first)?;
                 let mut mem = 0u32;
                 if let Some(s) = toks.get(*pos) {
-                    if s.atom().map(|a| a.starts_with('$') || parse_u32_str(a).is_some()).unwrap_or(false) {
+                    if s.atom()
+                        .map(|a| a.starts_with('$') || parse_u32_str(a).is_some())
+                        .unwrap_or(false)
+                    {
                         mem = self.memory_index(s)?;
                         *pos += 1;
                     }
@@ -1904,7 +2040,10 @@ impl InstrCtx {
                 let mut dst = 0u32;
                 let mut src = 0u32;
                 if let Some(s) = toks.get(*pos) {
-                    if s.atom().map(|a| a.starts_with('$') || parse_u32_str(a).is_some()).unwrap_or(false) {
+                    if s.atom()
+                        .map(|a| a.starts_with('$') || parse_u32_str(a).is_some())
+                        .unwrap_or(false)
+                    {
                         dst = self.memory_index(s)?;
                         *pos += 1;
                         let s2 = take(pos)?;
@@ -1916,7 +2055,10 @@ impl InstrCtx {
             "memory.fill" => {
                 let mut mem = 0u32;
                 if let Some(s) = toks.get(*pos) {
-                    if s.atom().map(|a| a.starts_with('$') || parse_u32_str(a).is_some()).unwrap_or(false) {
+                    if s.atom()
+                        .map(|a| a.starts_with('$') || parse_u32_str(a).is_some())
+                        .unwrap_or(false)
+                    {
                         mem = self.memory_index(s)?;
                         *pos += 1;
                     }
@@ -1998,7 +2140,10 @@ impl InstrCtx {
         }
         let _ = at;
         Ok((
-            MemArg { align: align.unwrap_or(width.trailing_zeros()), offset },
+            MemArg {
+                align: align.unwrap_or(width.trailing_zeros()),
+                offset,
+            },
             mem,
         ))
     }

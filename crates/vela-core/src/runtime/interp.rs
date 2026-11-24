@@ -24,13 +24,20 @@ pub struct Limits {
 
 impl Default for Limits {
     fn default() -> Self {
-        Limits { max_steps: 10_000_000, max_call_depth: 1_024, max_stack: 1_000_000 }
+        Limits {
+            max_steps: 10_000_000,
+            max_call_depth: 1_024,
+            max_stack: 1_000_000,
+        }
     }
 }
 
 impl Limits {
     pub fn with_steps(max_steps: u64) -> Self {
-        Limits { max_steps, ..Limits::default() }
+        Limits {
+            max_steps,
+            ..Limits::default()
+        }
     }
 }
 
@@ -106,7 +113,11 @@ pub fn func_name(inst: &Instance, defined_idx: usize) -> String {
     // Use an export if one points at this function, else the index.
     for (name, val) in &inst.exports {
         if let ExternVal::Func(addr) = val {
-            if inst.func_addrs.get(defined_idx + inst.module.imported_funcs()) == Some(addr) {
+            if inst
+                .func_addrs
+                .get(defined_idx + inst.module.imported_funcs())
+                == Some(addr)
+            {
                 return name.clone();
             }
         }
@@ -127,7 +138,9 @@ pub struct Machine {
 
 impl Default for Machine {
     fn default() -> Self {
-        Machine { limits: Limits::default() }
+        Machine {
+            limits: Limits::default(),
+        }
     }
 }
 
@@ -167,7 +180,13 @@ impl Machine {
                 st.finished = true;
                 return StepResult::Finished;
             }
-            Some(f) => (f.ip, f.defined_idx, f.module.clone(), f.info.clone(), f.inst),
+            Some(f) => (
+                f.ip,
+                f.defined_idx,
+                f.module.clone(),
+                f.info.clone(),
+                f.inst,
+            ),
         };
         let body = &module.funcs[defined_idx].body.body;
         let instr = match body.get(ip) {
@@ -325,7 +344,10 @@ impl Machine {
                 let args = split_off(st, ty.params.len())?;
                 enter_function(st, store, addr, args, &self.limits)?;
             }
-            CallIndirect { type_idx, table_idx } => {
+            CallIndirect {
+                type_idx,
+                table_idx,
+            } => {
                 let idx = pop_i32(st)? as u32;
                 let table_addr = *store
                     .instance(inst)?
@@ -359,19 +381,28 @@ impl Machine {
                 push(st, self.limits.max_stack, if cond != 0 { a } else { b })?;
             }
             LocalGet(i) => {
-                let v = *frame(st)?.locals.get(*i as usize).ok_or(Trap::TypeMismatch("local"))?;
+                let v = *frame(st)?
+                    .locals
+                    .get(*i as usize)
+                    .ok_or(Trap::TypeMismatch("local"))?;
                 push(st, self.limits.max_stack, v)?;
             }
             LocalSet(i) => {
                 let v = st.stack.pop().ok_or(Trap::TypeMismatch("local.set"))?;
                 let f = frame_mut(st)?;
-                let slot = f.locals.get_mut(*i as usize).ok_or(Trap::TypeMismatch("local"))?;
+                let slot = f
+                    .locals
+                    .get_mut(*i as usize)
+                    .ok_or(Trap::TypeMismatch("local"))?;
                 *slot = v;
             }
             LocalTee(i) => {
                 let v = *st.stack.last().ok_or(Trap::TypeMismatch("local.tee"))?;
                 let f = frame_mut(st)?;
-                let slot = f.locals.get_mut(*i as usize).ok_or(Trap::TypeMismatch("local"))?;
+                let slot = f
+                    .locals
+                    .get_mut(*i as usize)
+                    .ok_or(Trap::TypeMismatch("local"))?;
                 *slot = v;
             }
             GlobalGet(i) => {
@@ -483,7 +514,9 @@ impl Machine {
                     .get(*src as usize)
                     .ok_or(Trap::TableOutOfBounds)?;
                 if dst_addr == src_addr {
-                    store.table_mut(dst_addr)?.copy(d as u32, s as u32, n as u32)?;
+                    store
+                        .table_mut(dst_addr)?
+                        .copy(d as u32, s as u32, n as u32)?;
                 } else {
                     let vals: Vec<Value> = {
                         let src_table = store.table(src_addr)?;
@@ -493,7 +526,11 @@ impl Machine {
                             return Err(Trap::TableOutOfBounds);
                         }
                         (0..n0)
-                            .map(|k| src_table.get((s0 + k) as u32).unwrap_or(Value::FuncRef(None)))
+                            .map(|k| {
+                                src_table
+                                    .get((s0 + k) as u32)
+                                    .unwrap_or(Value::FuncRef(None))
+                            })
                             .collect()
                     };
                     store
@@ -580,7 +617,9 @@ impl Machine {
                     .get(*src as usize)
                     .ok_or(Trap::MemoryOutOfBounds)?;
                 if dst_addr == src_addr {
-                    store.memory_mut(dst_addr)?.copy(d as u32, s as u32, n as u32)?;
+                    store
+                        .memory_mut(dst_addr)?
+                        .copy(d as u32, s as u32, n as u32)?;
                 } else {
                     let bytes: Vec<u8> = {
                         let m = store.memory(src_addr)?;
@@ -591,7 +630,9 @@ impl Machine {
                         }
                         m.data()[s0 as usize..(s0 + n0) as usize].to_vec()
                     };
-                    store.memory_mut(dst_addr)?.init(d as u32, &bytes, 0, n as u32)?;
+                    store
+                        .memory_mut(dst_addr)?
+                        .init(d as u32, &bytes, 0, n as u32)?;
                 }
             }
             MemoryFill(m) => {
@@ -727,7 +768,10 @@ fn block_sig(module: &Module, bt: BlockType) -> Result<(usize, usize), Trap> {
         BlockType::Empty => Ok((0, 0)),
         BlockType::Value(_) => Ok((0, 1)),
         BlockType::TypeIdx(i) => {
-            let ty = module.types.get(i as usize).ok_or(Trap::TypeMismatch("block type"))?;
+            let ty = module
+                .types
+                .get(i as usize)
+                .ok_or(Trap::TypeMismatch("block type"))?;
             Ok((ty.params.len(), ty.results.len()))
         }
     }
@@ -741,7 +785,10 @@ fn block_height(st: &ExecState, params: usize) -> Result<usize, Trap> {
 }
 
 fn end_index(info: &BodyInfo, ip: usize) -> Result<usize, Trap> {
-    info.end_of.get(ip).copied().ok_or(Trap::TypeMismatch("block end"))
+    info.end_of
+        .get(ip)
+        .copied()
+        .ok_or(Trap::TypeMismatch("block end"))
 }
 
 fn enter_function(
@@ -778,7 +825,10 @@ fn enter_function(
                 push(st, limits.max_stack, v)?;
             }
         }
-        FuncKind::Wasm { instance, func: func_index } => {
+        FuncKind::Wasm {
+            instance,
+            func: func_index,
+        } => {
             let inst = store
                 .instance(instance)
                 .map_err(|_| Trap::TypeMismatch("function instance"))?;
@@ -835,7 +885,10 @@ fn enter_function(
 }
 
 fn return_from_function(st: &mut ExecState) -> Result<(), Trap> {
-    let frame = st.frames.pop().ok_or(Trap::TypeMismatch("return without frame"))?;
+    let frame = st
+        .frames
+        .pop()
+        .ok_or(Trap::TypeMismatch("return without frame"))?;
     let n = frame.arity;
     let vals = split_off(st, n)?;
     st.stack.truncate(frame.stack_base);
@@ -871,14 +924,21 @@ fn branch(st: &mut ExecState, depth: u32) -> Result<(), Trap> {
     Ok(())
 }
 
-fn load(mem: &crate::runtime::memory::MemoryInst, kind: LoadKind, addr: u32, arg: MemArg) -> Result<Value, Trap> {
+fn load(
+    mem: &crate::runtime::memory::MemoryInst,
+    kind: LoadKind,
+    addr: u32,
+    arg: MemArg,
+) -> Result<Value, Trap> {
     let mut buf = [0u8; 8];
     let width = kind.width() as usize;
     mem.read(addr, arg.offset, &mut buf[..width])?;
     Ok(match kind {
         LoadKind::I32 => Value::I32(i32::from_le_bytes([buf[0], buf[1], buf[2], buf[3]])),
         LoadKind::I64 => Value::I64(i64::from_le_bytes(buf)),
-        LoadKind::F32 => Value::F32(f32::from_bits(u32::from_le_bytes([buf[0], buf[1], buf[2], buf[3]]))),
+        LoadKind::F32 => Value::F32(f32::from_bits(u32::from_le_bytes([
+            buf[0], buf[1], buf[2], buf[3],
+        ]))),
         LoadKind::F64 => Value::F64(f64::from_bits(u64::from_le_bytes(buf))),
         LoadKind::I32x8S => Value::I32(buf[0] as i8 as i32),
         LoadKind::I32x8U => Value::I32(buf[0] as i32),
@@ -888,8 +948,12 @@ fn load(mem: &crate::runtime::memory::MemoryInst, kind: LoadKind, addr: u32, arg
         LoadKind::I64x8U => Value::I64(buf[0] as i64),
         LoadKind::I64x16S => Value::I64(i16::from_le_bytes([buf[0], buf[1]]) as i64),
         LoadKind::I64x16U => Value::I64(u16::from_le_bytes([buf[0], buf[1]]) as i64),
-        LoadKind::I64x32S => Value::I64(i32::from_le_bytes([buf[0], buf[1], buf[2], buf[3]]) as i64),
-        LoadKind::I64x32U => Value::I64(u32::from_le_bytes([buf[0], buf[1], buf[2], buf[3]]) as i64),
+        LoadKind::I64x32S => {
+            Value::I64(i32::from_le_bytes([buf[0], buf[1], buf[2], buf[3]]) as i64)
+        }
+        LoadKind::I64x32U => {
+            Value::I64(u32::from_le_bytes([buf[0], buf[1], buf[2], buf[3]]) as i64)
+        }
     })
 }
 
@@ -922,9 +986,17 @@ fn f32_min(a: f32, b: f32) -> f32 {
         return f32::from_bits(0x7fc0_0000);
     }
     if a == b {
-        return if a.is_sign_negative() || b.is_sign_negative() { -0.0 } else { a };
+        return if a.is_sign_negative() || b.is_sign_negative() {
+            -0.0
+        } else {
+            a
+        };
     }
-    if a < b { a } else { b }
+    if a < b {
+        a
+    } else {
+        b
+    }
 }
 
 fn f32_max(a: f32, b: f32) -> f32 {
@@ -932,9 +1004,17 @@ fn f32_max(a: f32, b: f32) -> f32 {
         return f32::from_bits(0x7fc0_0000);
     }
     if a == b {
-        return if a.is_sign_positive() || b.is_sign_positive() { 0.0 } else { a };
+        return if a.is_sign_positive() || b.is_sign_positive() {
+            0.0
+        } else {
+            a
+        };
     }
-    if a > b { a } else { b }
+    if a > b {
+        a
+    } else {
+        b
+    }
 }
 
 fn f64_min(a: f64, b: f64) -> f64 {
@@ -942,9 +1022,17 @@ fn f64_min(a: f64, b: f64) -> f64 {
         return f64::from_bits(0x7ff8_0000_0000_0000);
     }
     if a == b {
-        return if a.is_sign_negative() || b.is_sign_negative() { -0.0 } else { a };
+        return if a.is_sign_negative() || b.is_sign_negative() {
+            -0.0
+        } else {
+            a
+        };
     }
-    if a < b { a } else { b }
+    if a < b {
+        a
+    } else {
+        b
+    }
 }
 
 fn f64_max(a: f64, b: f64) -> f64 {
@@ -952,9 +1040,17 @@ fn f64_max(a: f64, b: f64) -> f64 {
         return f64::from_bits(0x7ff8_0000_0000_0000);
     }
     if a == b {
-        return if a.is_sign_positive() || b.is_sign_positive() { 0.0 } else { a };
+        return if a.is_sign_positive() || b.is_sign_positive() {
+            0.0
+        } else {
+            a
+        };
     }
-    if a > b { a } else { b }
+    if a > b {
+        a
+    } else {
+        b
+    }
 }
 
 fn trunc_f32_to_i32(x: f32, signed: bool) -> Result<i32, Trap> {

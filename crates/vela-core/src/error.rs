@@ -11,7 +11,10 @@ pub struct DecodeError {
 
 impl DecodeError {
     pub fn new(offset: usize, message: impl Into<String>) -> Self {
-        DecodeError { offset, message: message.into() }
+        DecodeError {
+            offset,
+            message: message.into(),
+        }
     }
 }
 
@@ -34,7 +37,12 @@ pub struct ValidationError {
 
 impl ValidationError {
     pub fn new(code: &'static str, message: impl Into<String>) -> Self {
-        ValidationError { func: None, offset: 0, code, message: message.into() }
+        ValidationError {
+            func: None,
+            offset: 0,
+            code,
+            message: message.into(),
+        }
     }
 
     pub fn at(mut self, func: Option<u32>, offset: usize) -> Self {
@@ -69,13 +77,21 @@ pub struct TextError {
 
 impl TextError {
     pub fn new(line: u32, col: u32, message: impl Into<String>) -> Self {
-        TextError { line, col, message: message.into() }
+        TextError {
+            line,
+            col,
+            message: message.into(),
+        }
     }
 }
 
 impl fmt::Display for TextError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "text error at {}:{}: {}", self.line, self.col, self.message)
+        write!(
+            f,
+            "text error at {}:{}: {}",
+            self.line, self.col, self.message
+        )
     }
 }
 

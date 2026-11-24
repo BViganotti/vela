@@ -6,8 +6,8 @@ use vela_core::error::{TextError, ValidationError};
 use vela_core::instr::{Instr, LoadKind, StoreKind};
 use vela_core::module::Module;
 use vela_core::runtime::{
-    instantiate, ExecState, ExternVal, FuncKind, Hasher, InstantiateError, Limits, Machine, StepResult,
-    Store, Trap, Value,
+    instantiate, ExecState, ExternVal, FuncKind, Hasher, InstantiateError, Limits, Machine,
+    StepResult, Store, Trap, Value,
 };
 use vela_core::text::parse_wat;
 use vela_core::types::ValType;
@@ -412,12 +412,13 @@ impl Session {
         for bp in &self.breakpoints {
             let hit = match bp {
                 Breakpoint::Function { func_addr: a } => *a == func_addr,
-                Breakpoint::Instruction { func_addr: a, offset: o } => {
-                    *a == func_addr && *o == offset
-                }
-                Breakpoint::MemoryAddress(address) => {
-                    instr.map(|i| memory_access_hits(i, *address, &self.exec)).unwrap_or(false)
-                }
+                Breakpoint::Instruction {
+                    func_addr: a,
+                    offset: o,
+                } => *a == func_addr && *o == offset,
+                Breakpoint::MemoryAddress(address) => instr
+                    .map(|i| memory_access_hits(i, *address, &self.exec))
+                    .unwrap_or(false),
                 Breakpoint::HostCall => instr
                     .map(|i| host_call_targets(i, &self.store, &self.exec, frame.inst))
                     .unwrap_or(false),
@@ -511,10 +512,11 @@ fn memory_access_hits(instr: &Instr, bp: u32, exec: &ExecState) -> bool {
         }
         _ => return false,
     };
-    let effective = addr as u64 + match instr {
-        Instr::Load { arg, .. } | Instr::Store { arg, .. } => arg.offset as u64,
-        _ => 0,
-    };
+    let effective = addr as u64
+        + match instr {
+            Instr::Load { arg, .. } | Instr::Store { arg, .. } => arg.offset as u64,
+            _ => 0,
+        };
     let target = bp as u64;
     target >= effective && target < effective + width as u64
 }

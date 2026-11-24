@@ -137,7 +137,11 @@ pub fn parse(input: &str) -> Result<Json, String> {
     if input.len() > 2 * 1024 * 1024 {
         return Err("json input too large".to_string());
     }
-    let mut p = Parser { bytes: input.as_bytes(), pos: 0, depth: 0 };
+    let mut p = Parser {
+        bytes: input.as_bytes(),
+        pos: 0,
+        depth: 0,
+    };
     p.skip_ws();
     let v = p.value()?;
     p.skip_ws();
@@ -182,7 +186,9 @@ impl<'a> Parser<'a> {
             return Err("json nesting too deep".to_string());
         }
         self.skip_ws();
-        let b = self.peek().ok_or_else(|| "unexpected end of json".to_string())?;
+        let b = self
+            .peek()
+            .ok_or_else(|| "unexpected end of json".to_string())?;
         match b {
             b'n' => {
                 self.literal("null")?;
@@ -270,12 +276,16 @@ impl<'a> Parser<'a> {
         self.expect(b'"')?;
         let mut out = String::new();
         loop {
-            let b = self.peek().ok_or_else(|| "unterminated string".to_string())?;
+            let b = self
+                .peek()
+                .ok_or_else(|| "unterminated string".to_string())?;
             self.pos += 1;
             match b {
                 b'"' => return Ok(out),
                 b'\\' => {
-                    let esc = self.peek().ok_or_else(|| "unterminated escape".to_string())?;
+                    let esc = self
+                        .peek()
+                        .ok_or_else(|| "unterminated escape".to_string())?;
                     self.pos += 1;
                     match esc {
                         b'"' => out.push('"'),
@@ -328,9 +338,13 @@ impl<'a> Parser<'a> {
     fn hex4(&mut self) -> Result<u32, String> {
         let mut v = 0u32;
         for _ in 0..4 {
-            let b = self.peek().ok_or_else(|| "short unicode escape".to_string())?;
+            let b = self
+                .peek()
+                .ok_or_else(|| "short unicode escape".to_string())?;
             self.pos += 1;
-            let d = (b as char).to_digit(16).ok_or_else(|| "bad hex digit".to_string())?;
+            let d = (b as char)
+                .to_digit(16)
+                .ok_or_else(|| "bad hex digit".to_string())?;
             v = v * 16 + d;
         }
         Ok(v)
@@ -365,11 +379,15 @@ impl<'a> Parser<'a> {
         let text = std::str::from_utf8(&self.bytes[start..self.pos])
             .map_err(|_| "bad number".to_string())?;
         if is_float {
-            text.parse::<f64>().map(Json::Float).map_err(|_| "bad number".to_string())
+            text.parse::<f64>()
+                .map(Json::Float)
+                .map_err(|_| "bad number".to_string())
         } else if let Ok(v) = text.parse::<i64>() {
             Ok(Json::Int(v))
         } else {
-            text.parse::<f64>().map(Json::Float).map_err(|_| "bad number".to_string())
+            text.parse::<f64>()
+                .map(Json::Float)
+                .map_err(|_| "bad number".to_string())
         }
     }
 }

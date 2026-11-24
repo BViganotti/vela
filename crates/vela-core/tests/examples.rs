@@ -1,11 +1,15 @@
 //! Run the hand-written example modules and compare expected results.
 
 use std::path::PathBuf;
-use vela_core::runtime::{instantiate, invoke_export, ExternVal, InstantiateError, Limits, Registry, Store, Value};
+use vela_core::runtime::{
+    instantiate, invoke_export, ExternVal, InstantiateError, Limits, Registry, Store, Value,
+};
 use vela_core::text::parse_wat;
 
 fn example_path(name: &str) -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../examples").join(name)
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../examples")
+        .join(name)
 }
 
 fn load(name: &str) -> (Store, u32) {
@@ -16,7 +20,12 @@ fn load(name: &str) -> (Store, u32) {
     (store, inst)
 }
 
-fn invoke(store: &mut Store, inst: u32, export: &str, args: &[Value]) -> Result<Vec<Value>, String> {
+fn invoke(
+    store: &mut Store,
+    inst: u32,
+    export: &str,
+    args: &[Value],
+) -> Result<Vec<Value>, String> {
     invoke_export(store, inst, export, args.to_vec(), Limits::default()).map_err(|e| match e {
         InstantiateError::Trap(t) => t.to_string(),
         other => other.to_string(),
@@ -37,7 +46,8 @@ fn examples_match_expected() {
     }
     {
         let (mut store, inst) = load("gcd.wat");
-        let out = invoke(&mut store, inst, "gcd", &[Value::I32(48), Value::I32(18)]).expect("gcd.wat");
+        let out =
+            invoke(&mut store, inst, "gcd", &[Value::I32(48), Value::I32(18)]).expect("gcd.wat");
         assert_eq!(out, vec![Value::I32(6)], "gcd.wat");
     }
     {
@@ -92,7 +102,13 @@ fn examples_match_expected() {
     }
     {
         let (mut store, inst) = load("select_demo.wat");
-        let out = invoke(&mut store, inst, "choose", &[Value::I32(10), Value::I32(20), Value::I32(1)]).expect("select_demo.wat");
+        let out = invoke(
+            &mut store,
+            inst,
+            "choose",
+            &[Value::I32(10), Value::I32(20), Value::I32(1)],
+        )
+        .expect("select_demo.wat");
         assert_eq!(out, vec![Value::I32(10)], "select_demo.wat");
     }
     {
@@ -126,7 +142,8 @@ fn examples_match_expected() {
 fn example_traps_are_typed() {
     {
         let (mut store, inst) = load("traps_div.wat");
-        let err = invoke(&mut store, inst, "div", &[Value::I32(1), Value::I32(0)]).expect_err("traps_div.wat");
+        let err = invoke(&mut store, inst, "div", &[Value::I32(1), Value::I32(0)])
+            .expect_err("traps_div.wat");
         assert_eq!(err, "integer divide by zero", "traps_div.wat");
     }
 }
@@ -157,7 +174,10 @@ fn every_example_export_resolves() {
     ];
     for (name, export) in cases {
         let (store, inst) = load(name);
-        let found = store.instances[inst as usize].exports.iter().any(|(n, v)| n == export && matches!(v, ExternVal::Func(_)));
+        let found = store.instances[inst as usize]
+            .exports
+            .iter()
+            .any(|(n, v)| n == export && matches!(v, ExternVal::Func(_)));
         assert!(found, "{name} exports {export}");
     }
 }

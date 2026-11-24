@@ -1,8 +1,8 @@
 //! Instantiation: import matching, allocation caps, rollback and start traps.
 
 use vela_core::module::{Export, ExportDesc, Func, FuncBody, Import, ImportDesc, Module};
-use vela_core::runtime::{instantiate, FuncKind, InstantiateError, Registry, Store, Trap};
 use vela_core::runtime::store::limits_match;
+use vela_core::runtime::{instantiate, FuncKind, InstantiateError, Registry, Store, Trap};
 use vela_core::text::parse_wat;
 use vela_core::types::{FuncType, Limits, MemoryType, TableType, ValType};
 
@@ -17,14 +17,19 @@ fn host_module(import_ty: FuncType, host_ty: FuncType) -> (Module, Registry, Sto
     m.types.push(FuncType::default());
     m.funcs.push(Func {
         type_idx: 1,
-        body: FuncBody { locals: vec![], body: vec![vela_core::instr::Instr::End] },
+        body: FuncBody {
+            locals: vec![],
+            body: vec![vela_core::instr::Instr::End],
+        },
     });
     let mut registry = Registry::new();
     registry.define_host(
         "env",
         "f",
         host_ty,
-        std::rc::Rc::new(|_: &mut vela_core::runtime::HostEnv, _: &[vela_core::runtime::Value]| Ok(vec![])),
+        std::rc::Rc::new(
+            |_: &mut vela_core::runtime::HostEnv, _: &[vela_core::runtime::Value]| Ok(vec![]),
+        ),
     );
     let mut store = Store::new();
     registry.install_hosts(&mut store);
@@ -48,19 +53,31 @@ fn missing_import_is_reported() {
 
 #[test]
 fn import_type_mismatch_is_rejected() {
-    let expected = FuncType { params: vec![ValType::I32], results: vec![] };
-    let actual = FuncType { params: vec![ValType::I64], results: vec![] };
+    let expected = FuncType {
+        params: vec![ValType::I32],
+        results: vec![],
+    };
+    let actual = FuncType {
+        params: vec![ValType::I64],
+        results: vec![],
+    };
     let (m, registry, mut store) = host_module(expected, actual);
     let before = store.funcs.len();
     let err = instantiate(&mut store, m, &registry).unwrap_err();
     assert!(matches!(err, InstantiateError::Import { .. }), "{err}");
-    assert_eq!(store.funcs.len(), before, "no allocations on import failure");
+    assert_eq!(
+        store.funcs.len(),
+        before,
+        "no allocations on import failure"
+    );
 }
 
 #[test]
 fn memory_cap_is_enforced() {
     let mut m = Module::default();
-    m.memories.push(MemoryType { limits: Limits::new(64, None) });
+    m.memories.push(MemoryType {
+        limits: Limits::new(64, None),
+    });
     let mut store = Store::new();
     store.max_memory_bytes = 1024 * 1024; // one MiB
     let err = instantiate(&mut store, m, &Registry::new()).unwrap_err();
@@ -71,7 +88,10 @@ fn memory_cap_is_enforced() {
 #[test]
 fn table_cap_is_enforced() {
     let mut m = Module::default();
-    m.tables.push(TableType { elem: ValType::FuncRef, limits: Limits::new(100, None) });
+    m.tables.push(TableType {
+        elem: ValType::FuncRef,
+        limits: Limits::new(100, None),
+    });
     let mut store = Store::new();
     store.max_table_entries = 10;
     let err = instantiate(&mut store, m, &Registry::new()).unwrap_err();
@@ -91,7 +111,10 @@ fn start_trap_rolls_back_allocations() {
     .unwrap();
     let mut store = Store::new();
     let err = instantiate(&mut store, m, &Registry::new()).unwrap_err();
-    assert!(matches!(err, InstantiateError::Trap(Trap::Unreachable)), "{err}");
+    assert!(
+        matches!(err, InstantiateError::Trap(Trap::Unreachable)),
+        "{err}"
+    );
     assert!(store.funcs.is_empty());
     assert!(store.memories.is_empty());
     assert!(store.globals.is_empty());
@@ -101,16 +124,25 @@ fn start_trap_rolls_back_allocations() {
 #[test]
 fn import_limits_matching() {
     assert!(limits_match(Limits::new(1, None), Limits::new(2, None)));
-    assert!(limits_match(Limits::new(1, Some(4)), Limits::new(2, Some(4))));
+    assert!(limits_match(
+        Limits::new(1, Some(4)),
+        Limits::new(2, Some(4))
+    ));
     assert!(!limits_match(Limits::new(2, None), Limits::new(1, None)));
     assert!(!limits_match(Limits::new(1, Some(4)), Limits::new(2, None)));
-    assert!(!limits_match(Limits::new(1, Some(4)), Limits::new(2, Some(5))));
+    assert!(!limits_match(
+        Limits::new(1, Some(4)),
+        Limits::new(2, Some(5))
+    ));
 }
 
 #[test]
 fn exported_and_imported_function_addresses_resolve() {
     let mut m = parse_wat(r#"(module (func (export "f") (result i32) i32.const 3))"#).unwrap();
-    m.exports.push(Export { name: "g".into(), desc: ExportDesc::Func(0) });
+    m.exports.push(Export {
+        name: "g".into(),
+        desc: ExportDesc::Func(0),
+    });
     let mut store = Store::new();
     let inst = instantiate(&mut store, m, &Registry::new()).unwrap();
     let inst_ref = &store.instances[inst as usize];

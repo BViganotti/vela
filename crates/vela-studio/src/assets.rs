@@ -64,10 +64,28 @@ pub const APP_JS: &str = include_str!("../../../assets/app.js");
 pub const STYLE_CSS: &str = include_str!("../../../assets/style.css");
 
 pub const FIXTURES: &[(&str, &str)] = &[
-    ("basic.wast", include_str!("../../../tests/fixtures/basic.wast")),
-    ("traps.wast", include_str!("../../../tests/fixtures/traps.wast")),
-    ("linking.wast", include_str!("../../../tests/fixtures/linking.wast")),
-    ("invalid.wast", include_str!("../../../tests/fixtures/invalid.wast")),
-    ("floats.wast", include_str!("../../../tests/fixtures/floats.wast")),
-    ("tables.wast", include_str!("../../../tests/fixtures/tables.wast")),
+    (
+        "basic.wast",
+        include_str!("../../../tests/fixtures/basic.wast"),
+    ),
+    (
+        "traps.wast",
+        include_str!("../../../tests/fixtures/traps.wast"),
+    ),
+    (
+        "linking.wast",
+        include_str!("../../../tests/fixtures/linking.wast"),
+    ),
+    (
+        "invalid.wast",
+        include_str!("../../../tests/fixtures/invalid.wast"),
+    ),
+    (
+        "floats.wast",
+        include_str!("../../../tests/fixtures/floats.wast"),
+    ),
+    (
+        "tables.wast",
+        include_str!("../../../tests/fixtures/tables.wast"),
+    ),
 ];

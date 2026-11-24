@@ -5,9 +5,7 @@ use vela_core::module::{
     Data, DataMode, Element, ElementMode, Export, ExportDesc, Func, FuncBody, Global, Import,
     ImportDesc, Module,
 };
-use vela_core::types::{
-    FuncType, GlobalType, Limits, MemoryType, TableType, ValType, MAX_PAGES,
-};
+use vela_core::types::{FuncType, GlobalType, Limits, MemoryType, TableType, ValType, MAX_PAGES};
 use vela_core::validate::validate_module;
 
 fn func(m: &mut Module, body: Vec<Instr>) -> u32 {
@@ -20,7 +18,13 @@ fn func(m: &mut Module, body: Vec<Instr>) -> u32 {
         m.types.push(FuncType::default());
         explicit
     };
-    m.funcs.push(Func { type_idx: ty, body: FuncBody { locals: vec![], body } });
+    m.funcs.push(Func {
+        type_idx: ty,
+        body: FuncBody {
+            locals: vec![],
+            body,
+        },
+    });
     m.funcs.len() as u32 - 1
 }
 
@@ -28,14 +32,20 @@ fn func(m: &mut Module, body: Vec<Instr>) -> u32 {
 fn call_indirect_requires_a_funcref_table() {
     let mut m = Module::default();
     m.types.push(FuncType::default());
-    m.tables.push(TableType { elem: ValType::ExternRef, limits: Limits::new(1, None) });
+    m.tables.push(TableType {
+        elem: ValType::ExternRef,
+        limits: Limits::new(1, None),
+    });
     m.funcs.push(Func {
         type_idx: 0,
         body: FuncBody {
             locals: vec![],
             body: vec![
                 Instr::I32Const(0),
-                Instr::CallIndirect { type_idx: 0, table_idx: 0 },
+                Instr::CallIndirect {
+                    type_idx: 0,
+                    table_idx: 0,
+                },
                 Instr::End,
             ],
         },
@@ -48,14 +58,20 @@ fn call_indirect_requires_a_funcref_table() {
 fn call_indirect_requires_a_known_type() {
     let mut m = Module::default();
     m.types.push(FuncType::default());
-    m.tables.push(TableType { elem: ValType::FuncRef, limits: Limits::new(1, None) });
+    m.tables.push(TableType {
+        elem: ValType::FuncRef,
+        limits: Limits::new(1, None),
+    });
     m.funcs.push(Func {
         type_idx: 0,
         body: FuncBody {
             locals: vec![],
             body: vec![
                 Instr::I32Const(0),
-                Instr::CallIndirect { type_idx: 9, table_idx: 0 },
+                Instr::CallIndirect {
+                    type_idx: 9,
+                    table_idx: 0,
+                },
                 Instr::End,
             ],
         },
@@ -67,9 +83,15 @@ fn call_indirect_requires_a_known_type() {
 fn element_type_must_match_table() {
     let mut m = Module::default();
     func(&mut m, vec![Instr::End]);
-    m.tables.push(TableType { elem: ValType::ExternRef, limits: Limits::new(1, None) });
+    m.tables.push(TableType {
+        elem: ValType::ExternRef,
+        limits: Limits::new(1, None),
+    });
     m.elems.push(Element {
-        mode: ElementMode::Active { table: 0, offset: vec![Instr::I32Const(0), Instr::End] },
+        mode: ElementMode::Active {
+            table: 0,
+            offset: vec![Instr::I32Const(0), Instr::End],
+        },
         elem_type: ValType::FuncRef,
         init: vec![vec![Instr::RefFunc(0), Instr::End]],
     });
@@ -81,7 +103,10 @@ fn element_type_must_match_table() {
 fn data_count_must_match_segments() {
     let mut m = Module::default();
     m.data_count = Some(2);
-    m.datas.push(Data { mode: DataMode::Passive, bytes: vec![1] });
+    m.datas.push(Data {
+        mode: DataMode::Passive,
+        bytes: vec![1],
+    });
     assert!(validate_module(&m).is_err());
 }
 
@@ -92,10 +117,16 @@ fn start_must_exist_and_have_empty_signature() {
     assert!(validate_module(&m).is_err());
 
     let mut m = Module::default();
-    m.types.push(FuncType { params: vec![ValType::I32], results: vec![] });
+    m.types.push(FuncType {
+        params: vec![ValType::I32],
+        results: vec![],
+    });
     m.funcs.push(Func {
         type_idx: 0,
-        body: FuncBody { locals: vec![], body: vec![Instr::End] },
+        body: FuncBody {
+            locals: vec![],
+            body: vec![Instr::End],
+        },
     });
     m.start = Some(0);
     assert!(validate_module(&m).is_err());
@@ -104,30 +135,45 @@ fn start_must_exist_and_have_empty_signature() {
 #[test]
 fn exports_and_imports_must_reference_valid_indices() {
     let mut m = Module::default();
-    m.exports.push(Export { name: "x".into(), desc: ExportDesc::Func(9) });
+    m.exports.push(Export {
+        name: "x".into(),
+        desc: ExportDesc::Func(9),
+    });
     assert!(validate_module(&m).is_err());
 
     let mut m = Module::default();
-    m.imports.push(Import { module: "a".into(), name: "b".into(), desc: ImportDesc::Func(4) });
+    m.imports.push(Import {
+        module: "a".into(),
+        name: "b".into(),
+        desc: ImportDesc::Func(4),
+    });
     assert!(validate_module(&m).is_err());
 }
 
 #[test]
 fn limits_and_global_initializers_are_checked() {
     let mut m = Module::default();
-    m.memories.push(MemoryType { limits: Limits::new(MAX_PAGES + 1, None) });
+    m.memories.push(MemoryType {
+        limits: Limits::new(MAX_PAGES + 1, None),
+    });
     assert!(validate_module(&m).is_err());
 
     let mut m = Module::default();
     m.globals.push(Global {
-        ty: GlobalType { val: ValType::I32, mutable: false },
+        ty: GlobalType {
+            val: ValType::I32,
+            mutable: false,
+        },
         init: vec![Instr::I64Const(0), Instr::End],
     });
     assert!(validate_module(&m).is_err());
 
     let mut m = Module::default();
     m.globals.push(Global {
-        ty: GlobalType { val: ValType::I32, mutable: false },
+        ty: GlobalType {
+            val: ValType::I32,
+            mutable: false,
+        },
         init: vec![Instr::Nop, Instr::End],
     });
     assert!(validate_module(&m).is_err());
@@ -139,7 +185,10 @@ fn bodies_must_end_exactly_once() {
     m.types.push(FuncType::default());
     m.funcs.push(Func {
         type_idx: 0,
-        body: FuncBody { locals: vec![], body: vec![Instr::End, Instr::Nop] },
+        body: FuncBody {
+            locals: vec![],
+            body: vec![Instr::End, Instr::Nop],
+        },
     });
     assert!(validate_module(&m).is_err());
 
@@ -147,7 +196,10 @@ fn bodies_must_end_exactly_once() {
     m.types.push(FuncType::default());
     m.funcs.push(Func {
         type_idx: 0,
-        body: FuncBody { locals: vec![], body: vec![Instr::Nop] },
+        body: FuncBody {
+            locals: vec![],
+            body: vec![Instr::Nop],
+        },
     });
     assert!(validate_module(&m).is_err());
 }
@@ -155,7 +207,10 @@ fn bodies_must_end_exactly_once() {
 #[test]
 fn tables_must_use_reference_types() {
     let mut m = Module::default();
-    m.tables.push(TableType { elem: ValType::I32, limits: Limits::new(1, None) });
+    m.tables.push(TableType {
+        elem: ValType::I32,
+        limits: Limits::new(1, None),
+    });
     assert!(validate_module(&m).is_err());
 }
 

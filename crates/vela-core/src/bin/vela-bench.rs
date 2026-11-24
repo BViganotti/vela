@@ -12,12 +12,10 @@ use std::time::Instant;
 use vela_core::binary::{decode_module, encode_module};
 use vela_core::instr::{Instr, MemArg, StoreKind};
 use vela_core::module::{Export, ExportDesc, Func, FuncBody, Module};
-use vela_core::runtime::{
-    instantiate, invoke, invoke_export, Limits, Machine, Registry, Store,
-};
-use vela_core::text::parse_wat;
 use vela_core::runtime::memory::MemoryInst;
-use vela_core::types::{FuncType, MemoryType, ValType, Limits as WLimits};
+use vela_core::runtime::{instantiate, invoke, invoke_export, Limits, Machine, Registry, Store};
+use vela_core::text::parse_wat;
+use vela_core::types::{FuncType, Limits as WLimits, MemoryType, ValType};
 
 fn measure<F: FnMut()>(name: &str, iters: u32, unit: &str, mut f: F) {
     f(); // warm up
@@ -40,7 +38,10 @@ fn measure<F: FnMut()>(name: &str, iters: u32, unit: &str, mut f: F) {
 
 fn sum_module() -> Module {
     let mut m = Module::default();
-    m.types.push(FuncType { params: vec![ValType::I32], results: vec![ValType::I32] });
+    m.types.push(FuncType {
+        params: vec![ValType::I32],
+        results: vec![ValType::I32],
+    });
     m.funcs.push(Func {
         type_idx: 0,
         body: FuncBody {
@@ -68,7 +69,10 @@ fn sum_module() -> Module {
             ],
         },
     });
-    m.exports.push(Export { name: "sum".into(), desc: ExportDesc::Func(0) });
+    m.exports.push(Export {
+        name: "sum".into(),
+        desc: ExportDesc::Func(0),
+    });
     m
 }
 
@@ -91,8 +95,13 @@ fn fib_wat() -> Module {
 
 fn memory_module() -> Module {
     let mut m = Module::default();
-    m.types.push(FuncType { params: vec![ValType::I32], results: vec![] });
-    m.memories.push(MemoryType { limits: WLimits::new(16, Some(64)) });
+    m.types.push(FuncType {
+        params: vec![ValType::I32],
+        results: vec![],
+    });
+    m.memories.push(MemoryType {
+        limits: WLimits::new(16, Some(64)),
+    });
     // fill(addr) writes 64 KiB in 4-byte stores via a loop.
     m.funcs.push(Func {
         type_idx: 0,
@@ -109,7 +118,11 @@ fn memory_module() -> Module {
                 Instr::BrIf(1),
                 Instr::LocalGet(1),
                 Instr::I32Const(0x5a5a),
-                Instr::Store { kind: StoreKind::I32, mem: 0, arg: MemArg::new(2, 0) },
+                Instr::Store {
+                    kind: StoreKind::I32,
+                    mem: 0,
+                    arg: MemArg::new(2, 0),
+                },
                 Instr::LocalGet(1),
                 Instr::I32Const(4),
                 Instr::I32Add,
@@ -121,7 +134,10 @@ fn memory_module() -> Module {
             ],
         },
     });
-    m.exports.push(Export { name: "fill".into(), desc: ExportDesc::Func(0) });
+    m.exports.push(Export {
+        name: "fill".into(),
+        desc: ExportDesc::Func(0),
+    });
     m
 }
 
@@ -133,8 +149,13 @@ fn bench_fib_stepping() {
         vela_core::runtime::ExternVal::Func(a) => a,
         _ => unreachable!(),
     };
-    let machine = Machine::new(Limits { max_steps: 100_000_000, ..Limits::default() });
-    let mut st = machine.start(&mut store, addr, vec![vela_core::runtime::Value::I32(20)]).unwrap();
+    let machine = Machine::new(Limits {
+        max_steps: 100_000_000,
+        ..Limits::default()
+    });
+    let mut st = machine
+        .start(&mut store, addr, vec![vela_core::runtime::Value::I32(20)])
+        .unwrap();
     let start = Instant::now();
     let mut steps = 0u64;
     while !st.is_finished() {
@@ -172,7 +193,11 @@ fn bench_memory_raw() {
 
 fn main() {
     println!("Vela core benchmarks");
-    println!("target: {} {}", std::env::consts::OS, std::env::consts::ARCH);
+    println!(
+        "target: {} {}",
+        std::env::consts::OS,
+        std::env::consts::ARCH
+    );
     println!();
 
     let text = std::fs::read_to_string(

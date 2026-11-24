@@ -208,7 +208,10 @@ impl<'a> ModuleContext<'a> {
         Ok(&self.module.types[*ty as usize])
     }
 
-    fn block_signature(&self, bt: crate::types::BlockType) -> Result<(Vec<ValType>, Vec<ValType>), ValidationError> {
+    fn block_signature(
+        &self,
+        bt: crate::types::BlockType,
+    ) -> Result<(Vec<ValType>, Vec<ValType>), ValidationError> {
         match bt {
             crate::types::BlockType::Empty => Ok((vec![], vec![])),
             crate::types::BlockType::Value(v) => Ok((vec![], vec![v])),
@@ -325,8 +328,7 @@ fn validate_body(
     };
     for (ip, instr) in body.body.iter().enumerate() {
         if v.ctrl.is_empty() {
-            return Err(err("instructions after the function's end")
-                .at(Some(func), ip));
+            return Err(err("instructions after the function's end").at(Some(func), ip));
         }
         v.ip = ip;
         v.instr(instr, &locals).map_err(|e| e.at(Some(func), ip))?;
@@ -342,11 +344,15 @@ fn validate_body(
 
 impl<'a, 'm> BodyValidator<'a, 'm> {
     fn frame(&self) -> &CtrlFrame {
-        self.ctrl.last().expect("validated control stack is never empty")
+        self.ctrl
+            .last()
+            .expect("validated control stack is never empty")
     }
 
     fn frame_mut(&mut self) -> &mut CtrlFrame {
-        self.ctrl.last_mut().expect("validated control stack is never empty")
+        self.ctrl
+            .last_mut()
+            .expect("validated control stack is never empty")
     }
 
     fn push(&mut self, t: ValType) {
@@ -372,9 +378,9 @@ impl<'a, 'm> BodyValidator<'a, 'm> {
 
     fn pop_expect(&mut self, expected: ValType) -> Result<(), ValidationError> {
         match self.pop_any()? {
-            Some(actual) if actual != expected => Err(err(format!(
-                "expected {expected} but found {actual}"
-            ))),
+            Some(actual) if actual != expected => {
+                Err(err(format!("expected {expected} but found {actual}")))
+            }
             _ => Ok(()),
         }
     }
@@ -392,15 +398,16 @@ impl<'a, 'm> BodyValidator<'a, 'm> {
         self.frame_mut().unreachable = true;
     }
 
-    fn push_ctrl(
-        &mut self,
-        kind: FrameKind,
-        start: Vec<ValType>,
-        end: Vec<ValType>,
-    ) {
+    fn push_ctrl(&mut self, kind: FrameKind, start: Vec<ValType>, end: Vec<ValType>) {
         let height = self.vals.len();
         self.push_opts(&start);
-        self.ctrl.push(CtrlFrame { kind, start_types: start, end_types: end, height, unreachable: false });
+        self.ctrl.push(CtrlFrame {
+            kind,
+            start_types: start,
+            end_types: end,
+            height,
+            unreachable: false,
+        });
     }
 
     fn pop_ctrl(&mut self) -> Result<CtrlFrame, ValidationError> {
@@ -460,8 +467,12 @@ impl<'a, 'm> BodyValidator<'a, 'm> {
                 self.push_ctrl(FrameKind::Else, frame.start_types, frame.end_types);
             }
             End => {
-                if self.frame().kind == FrameKind::If && self.frame().start_types != self.frame().end_types {
-                    return Err(err("if without else requires matching parameter and result types"));
+                if self.frame().kind == FrameKind::If
+                    && self.frame().start_types != self.frame().end_types
+                {
+                    return Err(err(
+                        "if without else requires matching parameter and result types",
+                    ));
                 }
                 let frame = self.pop_ctrl()?;
                 self.push_opts(&frame.end_types);
@@ -503,7 +514,10 @@ impl<'a, 'm> BodyValidator<'a, 'm> {
                 self.pop_types(&ty.params)?;
                 self.push_opts(&ty.results);
             }
-            CallIndirect { type_idx, table_idx } => {
+            CallIndirect {
+                type_idx,
+                table_idx,
+            } => {
                 let table = self.ctx.check_table(*table_idx)?;
                 if table.elem != ValType::FuncRef {
                     return Err(err("call_indirect requires a funcref table"));
@@ -815,4 +829,3 @@ pub fn validate_const_expr(
 pub fn validate_limits(limits: Limits, hard_max: u32) -> bool {
     limits.is_valid(hard_max)
 }
-

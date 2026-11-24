@@ -5,11 +5,9 @@ use std::fmt;
 
 use crate::runtime::store::Registry;
 use crate::runtime::{instantiate, invoke_export, Limits, Store, Value};
-use crate::spec::{
-    Action, Command, Expected, ModuleSource, NanKind,
-};
-use crate::text::sexpr::Sexpr;
+use crate::spec::{Action, Command, Expected, ModuleSource, NanKind};
 use crate::text::parse_wat;
+use crate::text::sexpr::Sexpr;
 use crate::types::ValType;
 use crate::validate::validate_module;
 
@@ -85,9 +83,7 @@ impl Executor {
                 self.ids.insert(name.clone(), inst);
                 Ok(())
             }
-            Command::Action(action) => {
-                self.eval_action(action).map(|_| ())
-            }
+            Command::Action(action) => self.eval_action(action).map(|_| ()),
             Command::AssertReturn { action, expected } => {
                 let actual = self.eval_action(action)?;
                 if actual.len() != expected.len() {
@@ -121,7 +117,11 @@ impl Executor {
                 }
                 Ok(values) => Err(format!("expected stack exhaustion, returned {values:?}")),
             },
-            Command::AssertInvalid { name, source, message } => {
+            Command::AssertInvalid {
+                name,
+                source,
+                message,
+            } => {
                 let _ = name;
                 match self.check_module(source) {
                     Ok(()) => Err(format!("module was valid, expected invalid ({message})")),
@@ -135,7 +135,9 @@ impl Executor {
                 }
             }
             Command::AssertMalformed { source, message } => match self.check_module(source) {
-                Ok(()) => Err(format!("module was well-formed, expected malformed ({message})")),
+                Ok(()) => Err(format!(
+                    "module was well-formed, expected malformed ({message})"
+                )),
                 Err(stage) => {
                     if stage.contains("parse") || stage.contains("decode") {
                         Ok(())
@@ -144,7 +146,11 @@ impl Executor {
                     }
                 }
             },
-            Command::AssertUnlinkable { name, source, message } => {
+            Command::AssertUnlinkable {
+                name,
+                source,
+                message,
+            } => {
                 let _ = name;
                 match self.load(source, false) {
                     Ok(_) => Err(format!("module linked, expected unlinkable ({message})")),
@@ -170,7 +176,10 @@ impl Executor {
                 if ok {
                     Ok(())
                 } else {
-                    Err(format!("expected {:?} NaN (bits {bits:#x}), got {:?}", kind, values[0]))
+                    Err(format!(
+                        "expected {:?} NaN (bits {bits:#x}), got {:?}",
+                        kind, values[0]
+                    ))
                 }
             }
         }
@@ -183,13 +192,19 @@ impl Executor {
                 .get(id)
                 .copied()
                 .ok_or_else(|| format!("unknown module {id}")),
-            None => self.last.ok_or_else(|| "no module instantiated".to_string()),
+            None => self
+                .last
+                .ok_or_else(|| "no module instantiated".to_string()),
         }
     }
 
     fn eval_action(&mut self, action: &Action) -> Result<Vec<Value>, String> {
         match action {
-            Action::Invoke { module, field, args } => {
+            Action::Invoke {
+                module,
+                field,
+                args,
+            } => {
                 let inst = self.resolve_instance(module.as_deref())?;
                 let mut values = Vec::with_capacity(args.len());
                 for a in args {
@@ -205,9 +220,11 @@ impl Executor {
                     .export(inst, field)
                     .ok_or_else(|| format!("unknown global export {field}"))?;
                 match ext {
-                    crate::runtime::ExternVal::Global(addr) => {
-                        Ok(vec![self.store.global(addr).map_err(|e| e.to_string())?.get()])
-                    }
+                    crate::runtime::ExternVal::Global(addr) => Ok(vec![self
+                        .store
+                        .global(addr)
+                        .map_err(|e| e.to_string())?
+                        .get()]),
                     _ => Err(format!("export {field} is not a global")),
                 }
             }
@@ -270,7 +287,11 @@ fn is_nan_kind(bits: u64, width: u32, kind: NanKind) -> bool {
     let (exp_mask, mantissa_mask, quiet) = if width == 32 {
         (0x7f80_0000u64, 0x007f_ffffu64, 0x0040_0000u64)
     } else {
-        (0x7ff0_0000_0000_0000u64, 0x000f_ffff_ffff_ffffu64, 0x0008_0000_0000_0000u64)
+        (
+            0x7ff0_0000_0000_0000u64,
+            0x000f_ffff_ffff_ffffu64,
+            0x0008_0000_0000_0000u64,
+        )
     };
     let magnitude = bits & !(1u64 << (width - 1));
     if magnitude & exp_mask != exp_mask {
@@ -335,43 +356,77 @@ fn parse_command(s: &Sexpr) -> Result<Command, crate::error::TextError> {
         }
         "assert_exhaustion" => {
             let action = parse_action(list.get(1).ok_or_else(|| s.err("missing action"))?)?;
-            let message = list.get(2).map(|_| string_at(list, 2)).transpose()?.unwrap_or_default();
+            let message = list
+                .get(2)
+                .map(|_| string_at(list, 2))
+                .transpose()?
+                .unwrap_or_default();
             Ok(Command::AssertExhaustion { action, message })
         }
         "assert_invalid" => {
             let inner = list.get(1).ok_or_else(|| s.err("missing module"))?;
             let inner_list = inner.list().ok_or_else(|| inner.err("expected a module"))?;
             let (name, source) = parse_module_source(inner_list)?;
-            let message = list.get(2).map(|_| string_at(list, 2)).transpose()?.unwrap_or_default();
-            Ok(Command::AssertInvalid { name, source, message })
+            let message = list
+                .get(2)
+                .map(|_| string_at(list, 2))
+                .transpose()?
+                .unwrap_or_default();
+            Ok(Command::AssertInvalid {
+                name,
+                source,
+                message,
+            })
         }
         "assert_malformed" => {
             let inner = list.get(1).ok_or_else(|| s.err("missing module"))?;
             let inner_list = inner.list().ok_or_else(|| inner.err("expected a module"))?;
             let (_, source) = parse_module_source(inner_list)?;
-            let message = list.get(2).map(|_| string_at(list, 2)).transpose()?.unwrap_or_default();
+            let message = list
+                .get(2)
+                .map(|_| string_at(list, 2))
+                .transpose()?
+                .unwrap_or_default();
             Ok(Command::AssertMalformed { source, message })
         }
         "assert_unlinkable" => {
             let inner = list.get(1).ok_or_else(|| s.err("missing module"))?;
             let inner_list = inner.list().ok_or_else(|| inner.err("expected a module"))?;
             let (name, source) = parse_module_source(inner_list)?;
-            let message = list.get(2).map(|_| string_at(list, 2)).transpose()?.unwrap_or_default();
-            Ok(Command::AssertUnlinkable { name, source, message })
+            let message = list
+                .get(2)
+                .map(|_| string_at(list, 2))
+                .transpose()?
+                .unwrap_or_default();
+            Ok(Command::AssertUnlinkable {
+                name,
+                source,
+                message,
+            })
         }
         "assert_return_canonical_nan" => {
             let action = parse_action(list.get(1).ok_or_else(|| s.err("missing action"))?)?;
-            Ok(Command::AssertNan { action, kind: NanKind::Canonical, bits: 0 })
+            Ok(Command::AssertNan {
+                action,
+                kind: NanKind::Canonical,
+                bits: 0,
+            })
         }
         "assert_return_arithmetic_nan" => {
             let action = parse_action(list.get(1).ok_or_else(|| s.err("missing action"))?)?;
-            Ok(Command::AssertNan { action, kind: NanKind::Arithmetic, bits: 1 })
+            Ok(Command::AssertNan {
+                action,
+                kind: NanKind::Arithmetic,
+                bits: 1,
+            })
         }
         other => Err(s.err(format!("unsupported wast command {other:?}"))),
     }
 }
 
-fn parse_module_source(list: &[Sexpr]) -> Result<(Option<String>, ModuleSource), crate::error::TextError> {
+fn parse_module_source(
+    list: &[Sexpr],
+) -> Result<(Option<String>, ModuleSource), crate::error::TextError> {
     let mut i = 1;
     let mut name = None;
     if let Some(a) = list.get(i).and_then(|s| s.atom()) {
@@ -397,18 +452,30 @@ fn parse_module_source(list: &[Sexpr]) -> Result<(Option<String>, ModuleSource),
             }
             Ok((name, ModuleSource::Quote(text)))
         }
-        None => Ok((name, ModuleSource::Text(Sexpr {
-            kind: crate::text::sexpr::SexprKind::List(list.to_vec()),
-            line: 0,
-            col: 0,
-        }.to_text()))),
+        None => Ok((
+            name,
+            ModuleSource::Text(
+                Sexpr {
+                    kind: crate::text::sexpr::SexprKind::List(list.to_vec()),
+                    line: 0,
+                    col: 0,
+                }
+                .to_text(),
+            ),
+        )),
         Some(_) => {
             // A module whose first field is a bare atom (rare); reconstruct.
-            Ok((name, ModuleSource::Text(Sexpr {
-                kind: crate::text::sexpr::SexprKind::List(list.to_vec()),
-                line: 0,
-                col: 0,
-            }.to_text())))
+            Ok((
+                name,
+                ModuleSource::Text(
+                    Sexpr {
+                        kind: crate::text::sexpr::SexprKind::List(list.to_vec()),
+                        line: 0,
+                        col: 0,
+                    }
+                    .to_text(),
+                ),
+            ))
         }
     }
 }
@@ -436,7 +503,11 @@ fn parse_action(s: &Sexpr) -> Result<Action, crate::error::TextError> {
                 args.push(parse_expected(&list[i])?);
                 i += 1;
             }
-            Ok(Action::Invoke { module, field, args })
+            Ok(Action::Invoke {
+                module,
+                field,
+                args,
+            })
         }
         "get" => {
             let field = string_at(list, i)?;
@@ -452,7 +523,9 @@ fn parse_expected(s: &Sexpr) -> Result<Expected, crate::error::TextError> {
         .first()
         .and_then(|s| s.atom())
         .ok_or_else(|| s.err("expected a constant"))?;
-    let arg = list.get(1).ok_or_else(|| s.err("constant is missing a value"))?;
+    let arg = list
+        .get(1)
+        .ok_or_else(|| s.err("constant is missing a value"))?;
     Ok(match head {
         "i32.const" => Expected::I32(crate::text::wat::const_i32(arg)?),
         "i64.const" => Expected::I64(crate::text::wat::const_i64(arg)?),
@@ -473,7 +546,9 @@ fn parse_expected(s: &Sexpr) -> Result<Expected, crate::error::TextError> {
             }
         }
         "ref.null" => {
-            let t = arg.atom().ok_or_else(|| arg.err("expected reference type"))?;
+            let t = arg
+                .atom()
+                .ok_or_else(|| arg.err("expected reference type"))?;
             Expected::RefNull(match t {
                 "func" | "funcref" => Some(ValType::FuncRef),
                 "extern" | "externref" => Some(ValType::ExternRef),
@@ -487,9 +562,9 @@ fn parse_expected(s: &Sexpr) -> Result<Expected, crate::error::TextError> {
 }
 
 fn string_at(list: &[Sexpr], i: usize) -> Result<String, crate::error::TextError> {
-    let s = list.get(i).ok_or_else(|| {
-        crate::error::TextError::new(1, 1, "missing string")
-    })?;
+    let s = list
+        .get(i)
+        .ok_or_else(|| crate::error::TextError::new(1, 1, "missing string"))?;
     let bytes = s.bytes().ok_or_else(|| s.err("expected a string"))?;
     Ok(String::from_utf8_lossy(bytes).into_owned())
 }
@@ -502,7 +577,10 @@ pub fn summarize(reports: &[WastReport]) -> String {
         total += r.total;
         passed += r.passed;
     }
-    format!("{passed}/{total} assertions passed across {} file(s)", reports.len())
+    format!(
+        "{passed}/{total} assertions passed across {} file(s)",
+        reports.len()
+    )
 }
 
 impl fmt::Display for WastReport {

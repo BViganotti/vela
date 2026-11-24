@@ -1,9 +1,7 @@
 //! In-memory module representation shared by all backends.
 
 use crate::instr::Instr;
-use crate::types::{
-    ExternType, FuncType, GlobalType, Limits, MemoryType, TableType, ValType,
-};
+use crate::types::{ExternType, FuncType, GlobalType, Limits, MemoryType, TableType, ValType};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Import {

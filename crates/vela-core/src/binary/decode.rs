@@ -111,7 +111,10 @@ pub fn decode_module(bytes: &[u8]) -> Result<Module, DecodeError> {
                     let mut br = sr.sub_reader(body_size)?;
                     let body = decode_func_body(&mut br)?;
                     if !br.is_empty() {
-                        return Err(DecodeError::new(br.pos(), "trailing bytes in function body"));
+                        return Err(DecodeError::new(
+                            br.pos(),
+                            "trailing bytes in function body",
+                        ));
                     }
                     module.funcs.push(Func { type_idx, body });
                 }
@@ -215,7 +218,9 @@ fn decode_import_section(r: &mut Reader<'_>, module: &mut Module) -> Result<(), 
                 let limits = read_limits(r, MAX_PAGES)?;
                 ImportDesc::Table(TableType { elem, limits })
             }
-            0x02 => ImportDesc::Memory(MemoryType { limits: read_limits(r, MAX_PAGES)? }),
+            0x02 => ImportDesc::Memory(MemoryType {
+                limits: read_limits(r, MAX_PAGES)?,
+            }),
             0x03 => {
                 let val = read_val_type(r)?;
                 let mutable = match r.read_u8()? {
@@ -227,7 +232,11 @@ fn decode_import_section(r: &mut Reader<'_>, module: &mut Module) -> Result<(), 
             }
             _ => return r.err("malformed import kind"),
         };
-        module.imports.push(Import { module: m, name, desc });
+        module.imports.push(Import {
+            module: m,
+            name,
+            desc,
+        });
     }
     Ok(())
 }
@@ -268,7 +277,10 @@ fn decode_global_section(r: &mut Reader<'_>, module: &mut Module) -> Result<(), 
             _ => return r.err("malformed mutability"),
         };
         let init = read_expr(r)?;
-        module.globals.push(Global { ty: GlobalType { val, mutable }, init });
+        module.globals.push(Global {
+            ty: GlobalType { val, mutable },
+            init,
+        });
     }
     Ok(())
 }
@@ -297,7 +309,11 @@ fn decode_element_section(r: &mut Reader<'_>, module: &mut Module) -> Result<(),
         let flags = r.read_u32()?;
         match flags {
             0 | 2 | 4 | 6 => {
-                let table = if flags == 0 || flags == 4 { 0 } else { r.read_u32()? };
+                let table = if flags == 0 || flags == 4 {
+                    0
+                } else {
+                    r.read_u32()?
+                };
                 let offset = read_expr(r)?;
                 let (elem_type, init) = read_elem_items(r, flags >= 4)?;
                 module.elems.push(Element {
@@ -398,7 +414,10 @@ fn decode_data_section(r: &mut Reader<'_>, module: &mut Module) -> Result<(), De
             }
             1 => {
                 let bytes = read_byte_vec(r)?;
-                module.datas.push(Data { mode: DataMode::Passive, bytes });
+                module.datas.push(Data {
+                    mode: DataMode::Passive,
+                    bytes,
+                });
             }
             2 => {
                 let memory = r.read_u32()?;
@@ -523,7 +542,10 @@ pub fn decode_instr(r: &mut Reader<'_>) -> Result<Instr, DecodeError> {
         0x11 => {
             let type_idx = r.read_u32()?;
             let table_idx = r.read_u32()?;
-            Instr::CallIndirect { type_idx, table_idx }
+            Instr::CallIndirect {
+                type_idx,
+                table_idx,
+            }
         }
         0x1A => Instr::Drop,
         0x1B => Instr::Select,
@@ -715,11 +737,19 @@ pub fn decode_instr(r: &mut Reader<'_>) -> Result<Instr, DecodeError> {
 }
 
 fn load(r: &mut Reader<'_>, kind: LoadKind) -> Result<Instr, DecodeError> {
-    Ok(Instr::Load { kind, mem: 0, arg: read_memarg(r)? })
+    Ok(Instr::Load {
+        kind,
+        mem: 0,
+        arg: read_memarg(r)?,
+    })
 }
 
 fn store(r: &mut Reader<'_>, kind: StoreKind) -> Result<Instr, DecodeError> {
-    Ok(Instr::Store { kind, mem: 0, arg: read_memarg(r)? })
+    Ok(Instr::Store {
+        kind,
+        mem: 0,
+        arg: read_memarg(r)?,
+    })
 }
 
 fn decode_fc(r: &mut Reader<'_>) -> Result<Instr, DecodeError> {
@@ -1091,7 +1121,10 @@ pub fn put_instr(out: &mut Vec<u8>, instr: &Instr) {
             out.push(0x10);
             put_u32(out, *f);
         }
-        CallIndirect { type_idx, table_idx } => {
+        CallIndirect {
+            type_idx,
+            table_idx,
+        } => {
             out.push(0x11);
             put_u32(out, *type_idx);
             put_u32(out, *table_idx);
@@ -1230,8 +1263,8 @@ pub fn put_instr(out: &mut Vec<u8>, instr: &Instr) {
             put_u32(out, 11);
             put_u32(out, *m);
         }
-        I32TruncSatF32S | I32TruncSatF32U | I32TruncSatF64S | I32TruncSatF64U
-        | I64TruncSatF32S | I64TruncSatF32U | I64TruncSatF64S | I64TruncSatF64U => {
+        I32TruncSatF32S | I32TruncSatF32U | I32TruncSatF64S | I32TruncSatF64U | I64TruncSatF32S
+        | I64TruncSatF32U | I64TruncSatF64S | I64TruncSatF64U => {
             out.push(0xFC);
             put_u32(out, sat_opcode(instr));
         }

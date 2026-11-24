@@ -13,7 +13,11 @@ pub struct GlobalInst {
 
 impl GlobalInst {
     pub fn new(ty: GlobalType, value: Value) -> Self {
-        GlobalInst { value, ty: ty.val, mutable: ty.mutable }
+        GlobalInst {
+            value,
+            ty: ty.val,
+            mutable: ty.mutable,
+        }
     }
 
     pub fn get(&self) -> Value {

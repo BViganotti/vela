@@ -17,8 +17,15 @@ pub enum ModuleSource {
 /// A script action.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action {
-    Invoke { module: Option<String>, field: String, args: Vec<Expected> },
-    Get { module: Option<String>, field: String },
+    Invoke {
+        module: Option<String>,
+        field: String,
+        args: Vec<Expected>,
+    },
+    Get {
+        module: Option<String>,
+        field: String,
+    },
 }
 
 /// Literal expectation or argument.
@@ -43,14 +50,44 @@ pub enum NanKind {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
-    Module { name: Option<String>, source: ModuleSource },
-    Register { name: String, module: Option<String> },
+    Module {
+        name: Option<String>,
+        source: ModuleSource,
+    },
+    Register {
+        name: String,
+        module: Option<String>,
+    },
     Action(Action),
-    AssertReturn { action: Action, expected: Vec<Expected> },
-    AssertTrap { action: Action, message: String },
-    AssertExhaustion { action: Action, message: String },
-    AssertInvalid { name: Option<String>, source: ModuleSource, message: String },
-    AssertMalformed { source: ModuleSource, message: String },
-    AssertUnlinkable { name: Option<String>, source: ModuleSource, message: String },
-    AssertNan { action: Action, kind: NanKind, bits: u32 },
+    AssertReturn {
+        action: Action,
+        expected: Vec<Expected>,
+    },
+    AssertTrap {
+        action: Action,
+        message: String,
+    },
+    AssertExhaustion {
+        action: Action,
+        message: String,
+    },
+    AssertInvalid {
+        name: Option<String>,
+        source: ModuleSource,
+        message: String,
+    },
+    AssertMalformed {
+        source: ModuleSource,
+        message: String,
+    },
+    AssertUnlinkable {
+        name: Option<String>,
+        source: ModuleSource,
+        message: String,
+    },
+    AssertNan {
+        action: Action,
+        kind: NanKind,
+        bits: u32,
+    },
 }

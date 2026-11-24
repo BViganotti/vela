@@ -190,14 +190,18 @@ mod tests {
         assert_eq!(Reader::new(&[0x7f]).read_u32().unwrap(), 127);
         assert_eq!(Reader::new(&[0x80, 0x01]).read_u32().unwrap(), 128);
         assert_eq!(
-            Reader::new(&[0xff, 0xff, 0xff, 0xff, 0x0f]).read_u32().unwrap(),
+            Reader::new(&[0xff, 0xff, 0xff, 0xff, 0x0f])
+                .read_u32()
+                .unwrap(),
             u32::MAX
         );
     }
 
     #[test]
     fn unsigned_leb_rejects_overflow() {
-        assert!(Reader::new(&[0xff, 0xff, 0xff, 0xff, 0x1f]).read_u32().is_err());
+        assert!(Reader::new(&[0xff, 0xff, 0xff, 0xff, 0x1f])
+            .read_u32()
+            .is_err());
         assert!(Reader::new(&[0x80; 6]).read_u32().is_err());
     }
 
@@ -207,11 +211,15 @@ mod tests {
         assert_eq!(Reader::new(&[0x40]).read_i32().unwrap(), -64);
         assert_eq!(Reader::new(&[0x80, 0x7f]).read_i32().unwrap(), -128);
         assert_eq!(
-            Reader::new(&[0xff, 0xff, 0xff, 0xff, 0x07]).read_i32().unwrap(),
+            Reader::new(&[0xff, 0xff, 0xff, 0xff, 0x07])
+                .read_i32()
+                .unwrap(),
             i32::MAX
         );
         assert_eq!(
-            Reader::new(&[0x80, 0x80, 0x80, 0x80, 0x78]).read_i32().unwrap(),
+            Reader::new(&[0x80, 0x80, 0x80, 0x80, 0x78])
+                .read_i32()
+                .unwrap(),
             i32::MIN
         );
     }

@@ -48,7 +48,11 @@ fn start() -> Studio {
         .expect("studio prints a URL");
     let (addr, token) = url.split_once("/?token=").expect("url has token");
     let addr = addr.trim_start_matches("http://").to_string();
-    Studio { child, addr, token: token.trim().to_string() }
+    Studio {
+        child,
+        addr,
+        token: token.trim().to_string(),
+    }
 }
 
 fn request(
@@ -60,7 +64,9 @@ fn request(
     origin: Option<&str>,
 ) -> (u16, String) {
     let mut stream = TcpStream::connect(&studio.addr).expect("connect");
-    stream.set_read_timeout(Some(Duration::from_secs(10))).unwrap();
+    stream
+        .set_read_timeout(Some(Duration::from_secs(10)))
+        .unwrap();
     let body = body.unwrap_or("");
     let mut head = format!("{method} {path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n");
     if with_token {
@@ -170,7 +176,9 @@ fn spec_and_diff_endpoints() {
 fn sse_stream_emits_steps_and_done() {
     let studio = start();
     let mut stream = TcpStream::connect(&studio.addr).unwrap();
-    stream.set_read_timeout(Some(Duration::from_secs(15))).unwrap();
+    stream
+        .set_read_timeout(Some(Duration::from_secs(15)))
+        .unwrap();
     write!(
         stream,
         "GET /api/stream?token={} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n",

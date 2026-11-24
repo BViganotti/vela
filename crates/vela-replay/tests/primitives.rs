@@ -26,7 +26,15 @@ fn session(interval: u64, n: i32) -> Session {
     let module = parse_wat(LOOP).unwrap();
     let mut store = Store::new();
     let inst = instantiate(&mut store, module, &Registry::new()).unwrap();
-    Session::from_instance(store, inst, "f", vec![Value::I32(n)], Limits::default(), interval).unwrap()
+    Session::from_instance(
+        store,
+        inst,
+        "f",
+        vec![Value::I32(n)],
+        Limits::default(),
+        interval,
+    )
+    .unwrap()
 }
 
 #[test]
@@ -99,8 +107,9 @@ fn memory_breakpoint_covers_the_access_width() {
     for (bp, should_hit) in [(99, false), (100, true), (103, true), (104, false)] {
         let mut store = Store::new();
         let inst = instantiate(&mut store, module.clone(), &Registry::new()).unwrap();
-        let mut s = Session::from_instance(store, inst, "s", vec![Value::I32(0)], Limits::default(), 4)
-            .unwrap();
+        let mut s =
+            Session::from_instance(store, inst, "s", vec![Value::I32(0)], Limits::default(), 4)
+                .unwrap();
         s.add_breakpoint(Breakpoint::MemoryAddress(bp));
         let stop = s.run();
         match stop {
@@ -118,7 +127,10 @@ fn checkpoint_interval_bounds_snapshots() {
     let steps = s.exec.steps as usize;
     let cps = s.checkpoint_count();
     assert!(cps > 2, "got {cps} checkpoints");
-    assert!(cps < steps, "should not snapshot every step ({cps}/{steps})");
+    assert!(
+        cps < steps,
+        "should not snapshot every step ({cps}/{steps})"
+    );
 }
 
 #[test]
