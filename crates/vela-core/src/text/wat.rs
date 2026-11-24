@@ -1358,7 +1358,16 @@ fn parse_table_limits(items: &[Sexpr]) -> TextResult<(Limits, ValType)> {
                 .unwrap_or_else(|| TextError::new(1, 1, "malformed table limits")),
         );
     }
-    Ok((Limits::new(nums[0], nums.get(1).copied()), elem))
+    let limits = Limits::new(nums[0], nums.get(1).copied());
+    if !limits.is_valid(crate::types::MAX_TABLE_ENTRIES) {
+        return Err(
+            items
+                .first()
+                .map(|s| s.err("table limits out of range"))
+                .unwrap_or_else(|| TextError::new(1, 1, "table limits out of range")),
+        );
+    }
+    Ok((limits, elem))
 }
 
 fn parse_global_type(s: &Sexpr) -> TextResult<GlobalType> {
