@@ -27,6 +27,11 @@ fn examples_match_expected() {
         let out = invoke(&mut store, inst, "fact", &[Value::I32(6)]).expect("factorial.wat");
         assert_eq!(out, vec![Value::I32(720)], "factorial.wat");
     }
+    {
+        let (mut store, inst) = load("fibonacci.wat");
+        let out = invoke(&mut store, inst, "fib", &[Value::I32(10)]).expect("fibonacci.wat");
+        assert_eq!(out, vec![Value::I32(55)], "fibonacci.wat");
+    }
 }
 
 #[test]
@@ -37,6 +42,7 @@ fn example_traps_are_typed() {
 fn every_example_export_resolves() {
     let cases: &[(&str, &str)] = &[
         ("factorial.wat", "fact"),
+        ("fibonacci.wat", "fib"),
     ];
     for (name, export) in cases {
         let (store, inst) = load(name);
