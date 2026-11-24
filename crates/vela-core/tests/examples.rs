@@ -47,6 +47,11 @@ fn examples_match_expected() {
         let out = invoke(&mut store, inst, "fill", &[]).expect("memory_fill.wat");
         assert_eq!(out, vec![Value::I32(171)], "memory_fill.wat");
     }
+    {
+        let (mut store, inst) = load("indirect_call.wat");
+        let out = invoke(&mut store, inst, "pick", &[Value::I32(1)]).expect("indirect_call.wat");
+        assert_eq!(out, vec![Value::I32(2)], "indirect_call.wat");
+    }
 }
 
 #[test]
@@ -61,6 +66,7 @@ fn every_example_export_resolves() {
         ("gcd.wat", "gcd"),
         ("memory_copy.wat", "copy"),
         ("memory_fill.wat", "fill"),
+        ("indirect_call.wat", "pick"),
     ];
     for (name, export) in cases {
         let (store, inst) = load(name);
