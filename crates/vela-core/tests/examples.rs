@@ -90,6 +90,11 @@ fn examples_match_expected() {
         let out = invoke(&mut store, inst, "convert", &[]).expect("conversions.wat");
         assert_eq!(out, vec![Value::I64(4294967298)], "conversions.wat");
     }
+    {
+        let (mut store, inst) = load("select_demo.wat");
+        let out = invoke(&mut store, inst, "choose", &[Value::I32(10), Value::I32(20), Value::I32(1)]).expect("select_demo.wat");
+        assert_eq!(out, vec![Value::I32(10)], "select_demo.wat");
+    }
 }
 
 #[test]
@@ -117,6 +122,7 @@ fn every_example_export_resolves() {
         ("bitwise.wat", "bits"),
         ("float_math.wat", "math"),
         ("conversions.wat", "convert"),
+        ("select_demo.wat", "choose"),
         ("traps_div.wat", "div"),
     ];
     for (name, export) in cases {
