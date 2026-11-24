@@ -1,7 +1,7 @@
 //! Run the hand-written example modules and compare expected results.
 
 use std::path::PathBuf;
-use vela_core::runtime::{instantiate, invoke_export, ExternVal, Limits, Registry, Store, Value};
+use vela_core::runtime::{instantiate, invoke_export, ExternVal, InstantiateError, Limits, Registry, Store, Value};
 use vela_core::text::parse_wat;
 
 fn example_path(name: &str) -> PathBuf {
@@ -17,7 +17,10 @@ fn load(name: &str) -> (Store, u32) {
 }
 
 fn invoke(store: &mut Store, inst: u32, export: &str, args: &[Value]) -> Result<Vec<Value>, String> {
-    invoke_export(store, inst, export, args.to_vec(), Limits::default()).map_err(|e| e.to_string())
+    invoke_export(store, inst, export, args.to_vec(), Limits::default()).map_err(|e| match e {
+        InstantiateError::Trap(t) => t.to_string(),
+        other => other.to_string(),
+    })
 }
 
 #[test]
