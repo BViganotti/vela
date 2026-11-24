@@ -35,6 +35,23 @@ struct WatParser {
     global_defined: bool,
 }
 
+/// Literal helpers shared with the `.wast` runner.
+pub fn const_i32(s: &Sexpr) -> TextResult<i32> {
+    parse_i32(s)
+}
+pub fn const_i64(s: &Sexpr) -> TextResult<i64> {
+    parse_i64(s)
+}
+pub fn const_u32(s: &Sexpr) -> TextResult<u32> {
+    parse_u32(s)
+}
+pub fn const_f32_bits(s: &Sexpr) -> TextResult<u32> {
+    parse_f32(s)
+}
+pub fn const_f64_bits(s: &Sexpr) -> TextResult<u64> {
+    parse_f64(s)
+}
+
 pub fn parse_module(src: &str) -> TextResult<Module> {
     let items = sexpr::parse_str(src)?;
     if items.len() != 1 {
@@ -73,16 +90,19 @@ fn parse_i32(s: &Sexpr) -> TextResult<i32> {
 
 fn parse_i32_str(a: &str) -> Option<i32> {
     if let Some(hex) = a.strip_prefix("0x").or_else(|| a.strip_prefix("0X")) {
-        if let Ok(v) = u32::from_str_radix(hex, 16) {
-            return Some(v as i32);
+        if let Ok(v) = u64::from_str_radix(hex, 16) {
+            return Some(v as u32 as i32);
         }
     }
     if let Some(hex) = a.strip_prefix("-0x") {
-        if let Ok(v) = u32::from_str_radix(hex, 16) {
-            return Some((v as i32).wrapping_neg());
+        if let Ok(v) = u64::from_str_radix(hex, 16) {
+            return Some((v as u32 as i32).wrapping_neg());
         }
     }
-    a.parse::<i32>().ok()
+    if let Ok(v) = a.parse::<i32>() {
+        return Some(v);
+    }
+    a.parse::<u32>().ok().map(|v| v as i32)
 }
 
 fn parse_i64(s: &Sexpr) -> TextResult<i64> {
@@ -101,7 +121,10 @@ fn parse_i64_str(a: &str) -> Option<i64> {
             return Some((v as i64).wrapping_neg());
         }
     }
-    a.parse::<i64>().ok()
+    if let Ok(v) = a.parse::<i64>() {
+        return Some(v);
+    }
+    a.parse::<u64>().ok().map(|v| v as i64)
 }
 
 fn parse_f32(s: &Sexpr) -> TextResult<u32> {
