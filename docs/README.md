@@ -21,6 +21,7 @@ Start here:
 | [testing](testing.md) | test layers and commands |
 | [verification](verification.md) | recorded build/test/fuzz/Studio transcript |
 | [benchmarks](benchmarks.md) | measured performance |
+| [performance](performance.md) | cost model, tuning knobs, measurement rules |
 | [examples](examples.md) | 20 example modules and expected results |
 | [scope](scope.md) | supported features and non-goals |
 | [roadmap](roadmap.md) | possible future work, not promises |
