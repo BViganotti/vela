@@ -2,3 +2,6 @@
 
 pub mod lexer;
 pub mod sexpr;
+pub mod wat;
+
+pub use wat::parse_module as parse_wat;
