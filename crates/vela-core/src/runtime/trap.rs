@@ -20,6 +20,7 @@ pub enum Trap {
     UnalignedAtomic,
     Host(String),
     LimitExceeded(&'static str),
+    TypeMismatch(&'static str),
 }
 
 impl Trap {
@@ -41,6 +42,7 @@ impl Trap {
             Trap::UnalignedAtomic => "unaligned atomic",
             Trap::Host(_) => "host error",
             Trap::LimitExceeded(_) => "resource limit exceeded",
+            Trap::TypeMismatch(_) => "type mismatch",
         }
     }
 }
