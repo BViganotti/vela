@@ -76,6 +76,17 @@ def main() -> int:
             assert total > 50, f"expected a real workload, got {total} steps"
             print("ran module to completion:", total, "steps")
 
+            # Memory tab and trace filter.
+            page.click('.tab[data-tab="memory"]')
+            page.wait_for_selector("#tab-memory .hex", timeout=5000)
+            memory_text = page.inner_text("#tab-memory .hex")
+            assert "00000000" in memory_text, "memory hex window not rendered"
+            page.select_option("#trace-filter", index=1)
+            page.wait_for_selector("#trace-list .trace-row", timeout=5000)
+            page.select_option("#trace-filter", "all")
+            page.click('.tab[data-tab="locals"]')
+            print("memory hex and trace filter render")
+
             # Restart and set an instruction breakpoint by clicking the disassembly.
             page.click("#btn-restart")
             wait_text(page, "#step-badge", lambda t: t == "step 0")
